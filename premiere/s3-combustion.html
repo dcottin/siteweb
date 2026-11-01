@@ -808,6 +808,10 @@ window.addEventListener('resize',fitMobile); fitMobile();
 planSync();
 </script>
 <script src="../pdf-lib.min.js"></script><script src="../html2canvas.min.js"></script><script>
+const PDF_API='https://pdf-siteweb.cottindylan.workers.dev/';
+(function(){ const q=new URLSearchParams(location.search); if(!q.has('pdf')) return;
+  const go=async()=>{ try{ await document.fonts.ready; const sel=q.get('sel')||'*'; show(cur.fil,'E',sel); await document.fonts.ready; await new Promise(r=>setTimeout(r,800)); }catch(e){} document.body.dataset.pdfReady='1'; };
+  if(document.readyState==='complete') go(); else addEventListener('load',go); })();
 (function(){const btn=document.getElementById('pdfdl'); if(!btn) return;
 const BASE=location.pathname.split('/').pop().replace(/\.html$/,'')||'index', TITLE=document.title;
 const clean=n=>n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,' ').replace(/[^\w ,.()-]+/g,' ').replace(/ +/g,' ').trim();
@@ -816,6 +820,11 @@ const get=u=>fetch(u).then(r=>{if(!r.ok) throw new Error(u); return r.arrayBuffe
 btn.addEventListener('click',async()=>{
   const lab=btn.textContent; btn.disabled=true; btn.textContent='Préparation du PDF…';
   try{
+    if(PDF_API&&!window.__noApi){ try{ const cs=(typeof cur!=='undefined'&&cur.doc)||'*';
+        const rr=await fetch(PDF_API+'?p='+encodeURIComponent(location.pathname.split('/').slice(-2).join('/'))+'&sel='+encodeURIComponent(cs));
+        if(!rr.ok) throw new Error(rr.status); const bl=await rr.blob(); if(bl.type!=='application/pdf') throw new Error('type');
+        const nm=cs==='*'?TITLE:TITLE+' - '+cs.split(',').map(d=>(document.querySelector('#docs button[data-doc="'+d+'"]')||{}).textContent).join(', ');
+        save(bl,nm+'.pdf'); btn.disabled=false; btn.textContent=lab; return; }catch(e){ console.warn('service PDF indisponible, repli',e); } }
     const sel=(typeof cur!=='undefined'&&cur.doc&&cur.doc!=='*')?cur.doc.split(','):[...document.querySelectorAll('#docs button[aria-pressed="true"]')].map(b=>b.dataset.doc); /* ordre des clics, comme le plan */
     if(!sel.length||sel.includes('*')){ save(new Blob([await get(BASE+'.pdf')],{type:'application/pdf'}),TITLE+'.pdf'); }
     else{
