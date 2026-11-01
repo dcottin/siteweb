@@ -775,7 +775,6 @@ function planSync(){
     rows.push({el:c,min:m,ex:ex||null}); rem-=m; };
   rowsAll.forEach(r=>{ const ids=r.dataset.ids.split(','); if(!ids.some(i=>sel.includes(i))) return;
     const m0=+r.dataset.min, label=r.dataset.full;
-    if(isA(ids[0])){ if(!rows||rows.length) open(); put(r,label,m0); return; }
     if(/^exos/.test(ids[0])){ const nn=(label.match(/\d+/g)||[]).map(Number), a=nn[0], z=nn[nn.length-1], per=m0/(z-a+1), q=[]; for(let n=a;n<=z;n++) q.push({n,min:per});
       while(q.length){ if(!rows) open(); if(rem<=0.01) open();
         const tot=q.reduce((s,x)=>s+x.min,0); let k=q.length, t=tot;
