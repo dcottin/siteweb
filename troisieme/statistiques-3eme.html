@@ -771,13 +771,28 @@ function planSync(){
   const CAP=60, sessions=[]; let rows=null, rem=0;
   const open=()=>{ rows=[]; sessions.push(rows); rem=CAP; };
   const rowsAll=stat.flatMap(se=>[...se.querySelectorAll('.psi')]);
+  const put=(r,label,m,ex)=>{ const c=r.cloneNode(true); c.querySelector('strong').innerHTML=label; c.dataset.min=m; c.querySelector('.drd').textContent=fmt(m);
+    rows.push({el:c,min:m,ex:ex||null}); rem-=m; };
   rowsAll.forEach(r=>{ const ids=r.dataset.ids.split(','); if(!ids.some(i=>sel.includes(i))) return;
-    const m=+r.dataset.min, auto=isA(ids[0]), ex=/^exos/.test(ids[0]);
-    if(!rows||(auto&&rows.length)||(m>rem&&rows.length)) open();
-    const prev=rows[rows.length-1];
-    if(ex&&prev&&prev.ex){ const a1=(prev.full.match(/\d+/g)||[])[0], b1=(r.dataset.full.match(/\d+/g)||[]).pop();
-      prev.min+=m; prev.full='Exercices '+a1+' à '+b1; prev.el.querySelector('strong').innerHTML=prev.full; prev.el.querySelector('.drd').textContent=fmt(prev.min); rem-=m; return; }
-    const c=r.cloneNode(true); c.querySelector('.drd').textContent=fmt(m); rows.push({el:c,min:m,ex:ex,full:r.dataset.full}); rem-=m; });
+    const m0=+r.dataset.min, label=r.dataset.full;
+    if(isA(ids[0])){ if(!rows||rows.length) open(); put(r,label,m0); return; }
+    if(/^exos/.test(ids[0])){ const nn=(label.match(/\d+/g)||[]).map(Number), a=nn[0], z=nn[nn.length-1], per=m0/(z-a+1), q=[]; for(let n=a;n<=z;n++) q.push({n,min:per});
+      while(q.length){ if(!rows) open(); if(rem<=0.01) open();
+        const tot=q.reduce((s,x)=>s+x.min,0); let k=q.length, t=tot;
+        if(tot>rem+0.01){ t=0; k=0; while(k<q.length&&t+q[k].min<=rem+q[k].min/2){ t+=q[k].min; k++; }
+          if(k===0){ if(rows.length){ open(); continue; } k=1; t=q[0].min; } else if(k<q.length) t=rem; }
+        const part=q.splice(0,k), first=part[0].n, last=part[part.length-1].n, prev=rows[rows.length-1];
+        if(prev&&prev.ex&&prev.ex.last===first-1){ prev.ex.last=last; prev.min+=t; rem-=t; prev.el.querySelector('strong').innerHTML='Exercices '+prev.ex.first+' à '+last; prev.el.querySelector('.drd').textContent=fmt(prev.min); }
+        else put(r,first===last?'Exercice '+first:'Exercices '+first+' à '+last,t,{first,last}); }
+      return; }
+    if(/^cours/.test(ids[0])){ let m=m0, cont=false;
+      while(m>0.01){ if(!rows) open(); if(rem<=0.01) open();
+        if(m<=rem+0.01){ put(r,label+(cont?' (suite)':''),m); m=0; }
+        else if(rem>=5&&m-rem>=5){ const pt=rem; put(r,label+(cont?' (suite)':''),pt); m-=pt; cont=true; }
+        else if(rows.length) open();
+        else { put(r,label+(cont?' (suite)':''),m); m=0; } }
+      return; }
+    if(!rows||(m0>rem&&rows.length)) open(); put(r,label,m0); });
   sessions.forEach((rs,k)=>{
     const m=Math.round(rs.reduce((s,r)=>s+r.min,0)/5)*5;
     const se=document.createElement('div'); se.className='pse dyn';
