@@ -768,47 +768,16 @@ function planSync(){
   const sl=dr.querySelector('.psl'); if(sl) sl.hidden=!(all||sel.some(d=>d.startsWith('exos')));
   if(all){ if(tot) tot.textContent=tot.dataset.tot; return; }
   const fmt=m=>{ m=Math.round(m/5)*5; return m<60?m+' min':'1 h'+(m%60?' '+String(m%60).padStart(2,'0'):''); };
-  const CAP=60, items=[], done=new Set();
-  const rowsAll=stat.flatMap(se=>[...se.querySelectorAll('.psi')]);
-  sel.forEach(id=>{ if(done.has(id)) return;
-    const rs=rowsAll.filter(r=>r.dataset.ids.split(',').includes(id)); if(!rs.length) return;
-    const r0=rs[0], ids=r0.dataset.ids.split(',');
-    ids.forEach(i=>{ if(sel.includes(i)) done.add(i); });
-    const c=r0.cloneNode(true), st=c.querySelector('strong'); let min=rs.reduce((s,r)=>s+(+r.dataset.min),0);
-    if(isA(id)){ st.innerHTML='Série '+'ABCDEFGH'[parseInt(id.slice(4))-1]; min=+r0.dataset.min; }
-    else if(r0.dataset.vers){ const v=ids.filter(i=>sel.includes(i)).map(i=>i.slice(-1).toUpperCase());
-      st.innerHTML=r0.dataset.base+(v.length===1?' (version '+v[0]+')':' (versions '+v.slice(0,-1).join(', ')+' et '+v[v.length-1]+')'); min=+r0.dataset.min; }
-    if(id.startsWith('exos')){ const ex=[]; rs.forEach(r=>{ const nn=(r.dataset.full.match(/\d+/g)||[]).map(Number); if(!nn.length) return; const a=nn[0], b=nn[nn.length-1], per=(+r.dataset.min)/(b-a+1); for(let n=a;n<=b;n++) ex.push({n,min:per}); });
-      if(ex.length){ items.push({el:c,min:min,exos:ex,auto:false}); return; } }
-    if(id.startsWith('cours')){ items.push({el:c,min,pieces:rs.map(r=>({label:r.dataset.full,min:+r.dataset.min})),auto:false}); return; }
-    items.push({el:c,min,split:id.startsWith('cours')||id.startsWith('exos'),auto:isA(id)}); });
-  const sessions=[]; let rows=null, rem=0, pend=null;
+  const CAP=60, sessions=[]; let rows=null, rem=0;
   const open=()=>{ rows=[]; sessions.push(rows); rem=CAP; };
-  const add=(it,m,cont)=>{ const c=it.el.cloneNode(true); c.dataset.min=m; c.querySelector('.drd').textContent=fmt(m);
-    if(cont) c.querySelector('strong').innerHTML+=' (suite)'; rows.push({el:c,min:m}); rem-=m; };
-  const lab=(a,b)=>a===b?'Exercice '+a:'Exercices '+a+' à '+b;
-  /* place dans la séance en cours ce qui peut y tenir du bloc en attente (cours coupé si morceaux >=10 min ; exercices par numéros entiers) */
-  const feed=()=>{ if(!pend) return false; const it=pend.it;
-    if(pend.q){ const q=pend.q; let t=0,k=0; while(k<q.length&&t+q[k].min<=rem){ t+=q[k].min; k++; }
-      if(k===0){ if(rows.length) return false; k=1; t=q[0].min; }
-      const part=q.splice(0,k), c=it.el.cloneNode(true); c.querySelector('strong').innerHTML=lab(part[0].n,part[k-1].n);
-      c.dataset.min=t; c.querySelector('.drd').textContent=fmt(t); rows.push({el:c,min:t}); rem-=t; if(!q.length) pend=null; return true; }
-    if(pend.p){ const P=pend.p; let did=false;
-      while(P.length&&(P[0].min<=rem||!rows.length)){ const x=P.shift(), c=it.el.cloneNode(true); c.querySelector('strong').innerHTML=x.label;
-        c.dataset.min=x.min; c.querySelector('.drd').textContent=fmt(x.min); rows.push({el:c,min:x.min}); rem-=x.min; did=true; }
-      if(!P.length) pend=null; return did; }
-    const m=pend.m;
-    if(m<=rem){ add(it,m,pend.cont); pend=null; return true; }
-    if(rem>=10&&m-rem>=10){ const part=rem; add(it,part,pend.cont); pend.m=m-part; pend.cont=true; return true; }
-    if(rows.length) return false;
-    add(it,m,pend.cont); pend=null; return true; };
-  const flush=()=>{ let g=0; while(pend&&g++<200){ if(!rows) open(); if(!feed()) open(); } };
-  items.forEach(it=>{
-    if(it.exos||it.pieces||it.split){ if(pend) flush(); if(!rows) open();
-      pend=it.exos?{it,q:it.exos.slice()}:it.pieces?{it,p:it.pieces.slice()}:{it,m:it.min,cont:false}; feed(); return; }
-    if(it.auto){ if(!rows||rows.length) open(); add(it,it.min,false); feed(); return; }
-    if(pend) flush(); if(!rows) open(); if(it.min>rem&&rows.length) open(); add(it,it.min,false); });
-  flush();
+  const rowsAll=stat.flatMap(se=>[...se.querySelectorAll('.psi')]);
+  rowsAll.forEach(r=>{ const ids=r.dataset.ids.split(','); if(!ids.some(i=>sel.includes(i))) return;
+    const m=+r.dataset.min, auto=isA(ids[0]), ex=/^exos/.test(ids[0]);
+    if(!rows||(auto&&rows.length)||(m>rem&&rows.length)) open();
+    const prev=rows[rows.length-1];
+    if(ex&&prev&&prev.ex){ const a1=(prev.full.match(/\d+/g)||[])[0], b1=(r.dataset.full.match(/\d+/g)||[]).pop();
+      prev.min+=m; prev.full='Exercices '+a1+' à '+b1; prev.el.querySelector('strong').innerHTML=prev.full; prev.el.querySelector('.drd').textContent=fmt(prev.min); rem-=m; return; }
+    const c=r.cloneNode(true); c.querySelector('.drd').textContent=fmt(m); rows.push({el:c,min:m,ex:ex,full:r.dataset.full}); rem-=m; });
   sessions.forEach((rs,k)=>{
     const m=Math.round(rs.reduce((s,r)=>s+r.min,0)/5)*5;
     const se=document.createElement('div'); se.className='pse dyn';
