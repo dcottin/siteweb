@@ -807,7 +807,7 @@ paginateCours=window.paginateCours; fitPages=window.fitPages;
 window.addEventListener('resize',fitMobile); fitMobile();
 planSync();
 </script>
-<script src="../pdf-lib.min.js"></script><script>
+<script src="../pdf-lib.min.js"></script><script src="../html2canvas.min.js"></script><script>
 (function(){const btn=document.getElementById('pdfdl'); if(!btn) return;
 const BASE=location.pathname.split('/').pop().replace(/\.html$/,'')||'index', TITLE=document.title;
 const clean=n=>n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,' ').replace(/[^\w ,.()-]+/g,' ').replace(/ +/g,' ').trim();
@@ -816,15 +816,21 @@ const get=u=>fetch(u).then(r=>{if(!r.ok) throw new Error(u); return r.arrayBuffe
 btn.addEventListener('click',async()=>{
   const lab=btn.textContent; btn.disabled=true; btn.textContent='Préparation du PDF…';
   try{
-    const sel=[...document.querySelectorAll('#docs button[aria-pressed="true"]')].map(b=>b.dataset.doc);
+    const sel=(typeof cur!=='undefined'&&cur.doc&&cur.doc!=='*')?cur.doc.split(','):[...document.querySelectorAll('#docs button[aria-pressed="true"]')].map(b=>b.dataset.doc); /* ordre des clics, comme le plan */
     if(!sel.length||sel.includes('*')){ save(new Blob([await get(BASE+'.pdf')],{type:'application/pdf'}),TITLE+'.pdf'); }
     else{
       const names=sel.map(d=>document.querySelector('#docs button[data-doc="'+d+'"]').textContent);
-      const bufs=await Promise.all(sel.map(d=>get(BASE+'/'+d+'.pdf')));
+      /* le plan dépend de la sélection (plan dynamique) : on le capture tel qu'affiché, en image A4, au lieu du plan complet pré-généré */
+      const planImg=async()=>{ const pg=document.querySelector('section.doc[data-doc="plan"]:not([hidden]) .page'); if(!pg) return null;
+        const h=document.documentElement, m=h.classList.contains('fitm'); h.classList.remove('fitm');
+        try{ await document.fonts.ready; const cv=await html2canvas(pg,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1123,windowWidth:1200});
+          return await new Promise(r=>cv.toBlob(r,'image/png')).then(b=>b.arrayBuffer()); } finally{ if(m) h.classList.add('fitm'); } };
+      const bufs=await Promise.all(sel.map(d=>d==='plan'&&sel.length>1?planImg().then(i=>i?{img:i}:get(BASE+'/plan.pdf')):get(BASE+'/'+d+'.pdf')));
       let out;
       if(bufs.length===1) out=bufs[0];
       else{ const {PDFDocument}=PDFLib; const doc=await PDFDocument.create();
-        for(const b of bufs){ const src=await PDFDocument.load(b); (await doc.copyPages(src,src.getPageIndices())).forEach(p=>doc.addPage(p)); }
+        for(const b of bufs){ if(b.img){ const im=await doc.embedPng(b.img); const pp=doc.addPage([595.28,841.89]); pp.drawImage(im,{x:0,y:0,width:595.28,height:841.89}); continue; }
+          const src=await PDFDocument.load(b); (await doc.copyPages(src,src.getPageIndices())).forEach(p=>doc.addPage(p)); }
         doc.setTitle(TITLE); out=await doc.save(); }
       save(new Blob([out],{type:'application/pdf'}),TITLE+' - '+names.join(', ')+'.pdf');
     }
