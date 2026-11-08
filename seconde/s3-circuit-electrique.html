@@ -626,7 +626,7 @@ function paginateCours(){
   const isHead=e=>e&&(e.matches('.sh,.apres')||(e.tagName==='SECTION'&&e.firstElementChild&&e.firstElementChild.matches('.sh'))||(e.matches('.cx')&&e.firstElementChild&&e.firstElementChild.tagName==='H3'));
   const orphan=e=>e&&(e.matches('.sh,.apres')||((e.tagName==='SECTION'||e.matches('.cx'))&&e.children.length===1&&e.firstElementChild.matches('.sh,h3,h2')));
   function suite(doc,pc){
-    const F=pc.firstElementChild; if(!F||isHead(F)) return;
+    const F=pc.firstElementChild; if(!F||isHead(F)||F.tagName==='H2') return;
     let last=null; for(const h of doc.querySelectorAll('.sh,.cx>h3')){ if(pc.contains(h)) break; last=h; }
     if(!last||last.closest('.page')===pc.closest('.page')) return;
     let c;
