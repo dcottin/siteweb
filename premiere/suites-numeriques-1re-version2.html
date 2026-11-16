@@ -362,7 +362,7 @@ button:focus-visible{outline:3px solid var(--c-cours);outline-offset:2px}
 .plan-hd h1{font-size:30px;letter-spacing:-.015em;line-height:1.02}
 .plan-hd .rt .a{font-family:var(--f-title);font-size:15px;font-weight:800;color:var(--c-cours)}
 .pc{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--pcgap,8px)}
-.pc.overflow{outline:3px dashed red}
+.pc.overflow{outline:none}
 .pc.t1{gap:5px;line-height:1.32}
 .pc.t2{gap:4px;line-height:1.27}.pc.t2 .lns span,.pc.t2 .nq .lns span{height:22px}
 .pc.t3{gap:2px;line-height:1.22;font-size:13px}.pc.t3 h2{font-size:16px}.pc.t3 .ansb{padding:0}.pc.t3 .lns span,.pc.t3 .nq .lns span{height:20px}
@@ -724,8 +724,11 @@ function fitPages(){
   const bad=[];
   document.querySelectorAll('.pc').forEach(pc=>{
     pc.classList.remove('t1','t2','t3','overflow');
+    [...pc.children].forEach(e=>e.style.zoom='');
     const over=()=>{ if(pc.scrollHeight>pc.clientHeight) return true; const R=pc.getBoundingClientRect().bottom; return [...pc.children].some(e=>e.getBoundingClientRect().bottom>R+0.5); };
     for(const c of ['t1','t2','t3']){ if(!over()) break; pc.classList.add(c); }
+    /* dernier recours (polices de remplacement plus larges, aperçu, Safari) : on réduit légèrement le contenu jusqu'à ce qu'il tienne */
+    for(let z=0.98; over() && z>=0.78; z-=0.02){ [...pc.children].forEach(e=>e.style.zoom=z.toFixed(2)); }
     if(over()){ pc.classList.add('overflow');
       const s=pc.closest('section.doc'), bk=pc.closest('.booklet'); bad.push(bk.dataset.fil+'/'+bk.dataset.part+' · '+s.dataset.doc+' p'+([...s.querySelectorAll(':scope>.page')].indexOf(pc.parentNode)+1)+' +'+(pc.scrollHeight-pc.clientHeight)+'px'); }
   });
