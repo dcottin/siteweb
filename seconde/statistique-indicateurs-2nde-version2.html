@@ -785,7 +785,16 @@ function fixWidows(){
   });
   els.forEach((e,k)=>e.hidden=was[k]);
 }
-(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{ paginateCours(); fixLab(); renumber(); fitPages(); });
+/* valeurs de la situation sur une seule ligne (Dc 2026-11-16) : police réduite jusqu'à 11,5 px, sinon lignes équilibrées */
+function fitSit(){
+  const els=[...document.querySelectorAll('.booklet,section.doc')], was=els.map(e=>e.hidden); els.forEach(e=>e.hidden=false);
+  document.querySelectorAll('.sitdata').forEach(x=>{ x.style.whiteSpace='nowrap';
+    let fs=parseFloat(getComputedStyle(x).fontSize); const f0=fs;
+    while(x.scrollWidth>x.clientWidth+0.5&&fs>11.5){ fs-=0.25; x.style.fontSize=fs+'px'; }
+    if(x.scrollWidth>x.clientWidth+0.5){ x.style.whiteSpace=''; x.style.fontSize=f0+'px'; } });
+  els.forEach((e,i)=>e.hidden=was[i]);
+}
+(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{ fitSit(); paginateCours(); fixLab(); renumber(); fitPages(); });
 if(document.fonts){ document.fonts.addEventListener('loadingdone',()=>{ if(window.__overflow!==undefined) fitPages(); }); }
 window.addEventListener('load',()=>{ (document.fonts?document.fonts.ready:Promise.resolve()).then(()=>{ if(window.__overflow!==undefined) fitPages(); }); });
 
