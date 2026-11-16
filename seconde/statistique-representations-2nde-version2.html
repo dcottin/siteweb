@@ -599,11 +599,14 @@ sub i{font-size:1em}
 .tnode .tx{height:30px;line-height:30px;white-space:nowrap}.tnode .te{height:18px;line-height:18px;font-size:.86em;color:#555;font-style:italic;white-space:nowrap}
 .lns span,.nq .lns span,.nbox .lns span,.pc.t1 .lns span,.pc.t2 .lns span,.pc.t3 .lns span,.pc.t2 .nq .lns span,.pc.t3 .nq .lns span{height:30px!important}
 .blank{height:1.2em}
-section[data-doc^="cours"] .actq{border-left:4px solid #1D4ED8;background:#F4F7FD;border-radius:0 8px 8px 0;padding:14px 10px 12px 8px;position:relative;margin-top:12px}
+section[data-doc^="cours"] .actq{border:1.5px solid #1D4ED8;border-left:4px solid #1D4ED8;background:#F4F7FD;border-radius:0 8px 8px 0;padding:14px 10px 12px 8px;position:relative;margin-top:12px}
 section[data-doc^="cours"] .actq>.nq+.nq{margin-top:14px}
 section[data-doc^="cours"] .actq::before{content:"Activité";position:absolute;top:-8px;left:8px;background:#1D4ED8;color:#fff;font:700 10px/16px var(--f-text);letter-spacing:.1em;text-transform:uppercase;padding:0 7px;border-radius:4px}
 section[data-doc^="cours"] .actq .qn{background:#1D4ED8 !important;color:#fff}
 section[data-doc^="cours"] .nbox.def::before,section[data-doc^="cours"] .nbox.meth::before{content:"À retenir · " attr(data-label)}
+/* encadrés du cours : même forme que l'activité (Dc 2026-11-16) */
+section[data-doc^="cours"] .nbox.def,section[data-doc^="cours"] .nbox.meth{border:1.5px solid #D62828 !important;border-left:4px solid #D62828 !important;border-radius:0 8px 8px 0 !important;background:#FDF4F3 !important;padding:16px 12px 10px 10px !important;margin-top:12px !important}
+section[data-doc^="cours"] .nbox.def::before,section[data-doc^="cours"] .nbox.meth::before{top:-8px !important;left:8px !important;background:#D62828 !important;color:#fff !important;font:700 10px/16px var(--f-text) !important;letter-spacing:.1em !important;text-transform:uppercase;padding:0 7px !important;border-radius:4px !important}
 .sst{margin:6px 0 0;font-family:var(--f-title);font-size:15.5px;color:#B3261E}
 .sitdata .dt{margin:0 auto}
 .sbox{text-align:center;font-weight:600;line-height:1.7;padding:4px 10px;border:1px solid #CBD3CE;border-radius:6px;background:#F7F9F8}
