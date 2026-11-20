@@ -595,11 +595,13 @@ section[data-kind="cours"] .nbox.def::before,section[data-kind="cours"] .nbox.pr
 section[data-kind="cours"] .nbox .ans{color:#1F5FBF}
 .pdfbar{display:flex}.pdfbar a.pdfdl{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:7px 12px;border-radius:8px;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;box-sizing:border-box}
 @media print{.pdfbar{display:none}}
-</style><div class="nav" id="nav">
+</style><style>.pdfbar{display:flex;align-items:center}.pdfbar button.pdfdl{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:7px 12px;border-radius:8px;min-height:36px;cursor:pointer;display:inline-flex;align-items:center;box-sizing:border-box}@media print{.pdfbar{display:none}}.pdfbar a.pdfdl{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--ink);background:var(--ink);color:#fff;padding:7px 12px;border-radius:8px;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;box-sizing:border-box}</style>
+<div class="nav" id="nav">
   <div class="nav-row">
     <div class="brand">Calculer pour tracer et débiter <small>Mathématiques · Co-intervention</small></div>
     <div class="seg" id="fils" role="group" aria-label="Version" hidden></div>
     <div class="seg" id="parts" role="group" aria-label="Livret"></div>
+<div class="pdfbar" id="pdfart"><a class="pdfdl" id="pdfa" target="_blank" rel="noopener" href="https://pdf-siteweb.cottindylan.workers.dev/?p=seconde/calculer-pour-tracer-et-debiter.html&dl=1&name=calculer-pour-tracer-et-debiter">⬇ Télécharger le PDF (A4)</a></div>
   <div class="pdfbar" role="group" aria-label="PDF"><button type="button" class="pdfdl" id="pdfdl">⬇ Télécharger le PDF (A4)</button></div></div>
   <div class="docs" id="docs" role="group" aria-label="Documents"></div>
 </div>
@@ -825,6 +827,7 @@ paginateCours=window.paginateCours; fitPages=window.fitPages;
 window.addEventListener('resize',fitMobile); fitMobile();
 planSync();
 </script>
+<script id="pdfartjs">(function(){const a=document.getElementById("pdfa");if(!a)return;const NOMS={com:"commerce",chau:"chaudronnerie",quo:"quotidien"};const u=()=>{if(typeof cur==="undefined")return;const C=cur.part==="C",d=cur.doc||"*";a.href="https://pdf-siteweb.cottindylan.workers.dev/?p=seconde/calculer-pour-tracer-et-debiter.html&dl=1"+"&sel="+encodeURIComponent(d)+(C?"&part=C":"")+"&name=calculer-pour-tracer-et-debiter";};["pointerdown","mousedown","touchstart","focus","click"].forEach(e=>a.addEventListener(e,u));u();})();</script>
 <script src="../pdf-lib.min.js"></script><script src="../html2canvas.min.js"></script><script>
 const PDF_API='https://pdf-siteweb.cottindylan.workers.dev/', API_C=false;
 (function(){ const q=new URLSearchParams(location.search); if(!q.has('pdf')) return;
