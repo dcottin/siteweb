@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Appréciations de bulletin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>body{margin:0}</style>
+</head><body>
+<style>
+/* Outil de bureau : barre de réglages de la classe en haut, puis une fiche par élève (réglages à gauche, appréciation à droite). */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --surface-2:#f6f8f8; --ink:#16242a; --muted:#5a6b70; --line:#d5dddc;
+  --accent:#1e5d71; --accent-ink:#ffffff; --accent-soft:#e1edf0;
+  --t-E:#2c7a4b; --t-C:#1e6f86; --t-B:#5a6b8c; --t-F:#a86c0c; --t-A:#b3362b;
+  --paper:#fffef9; --focus:#e09a1f;
+  --f-head:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171a; --surface:#162125; --surface-2:#1b282d; --ink:#e3ecec; --muted:#93a4a8; --line:#2a3a40;
+  --accent:#6fb4c9; --accent-ink:#0f171a; --accent-soft:#1c333a;
+  --t-E:#6cc48f; --t-C:#6fb4c9; --t-B:#a3b0d0; --t-F:#e0a64a; --t-A:#ea7a70;
+  --paper:#1a262a; --focus:#e0a64a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171a; --surface:#162125; --surface-2:#1b282d; --ink:#e3ecec; --muted:#93a4a8; --line:#2a3a40;
+  --accent:#6fb4c9; --accent-ink:#0f171a; --accent-soft:#1c333a;
+  --t-E:#6cc48f; --t-C:#6fb4c9; --t-B:#a3b0d0; --t-F:#e0a64a; --t-A:#ea7a70;
+  --paper:#1a262a; --focus:#e0a64a; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--f-head);font-size:1.75rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--f-head);font-size:1.05rem;margin:0}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 20px}
+.sub{color:var(--muted);margin:2px 0 0;max-width:62ch}
+.lock{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>span,.lbl{font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+select,input[type=text],input[type=password],input[type=number],textarea{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+select{padding-right:6px}
+input[type=number]{width:84px;font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;font-weight:500}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:6px 8px}
+button.ghost:hover{color:var(--ink);border-color:var(--line)}
+button.danger{color:var(--t-A)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface-2)}
+.seg button{border:0;border-radius:0;background:transparent;padding:7px 10px;color:var(--muted);font-weight:500}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
+.seg button:disabled{opacity:.4;cursor:default}
+.check{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;padding-bottom:7px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.spacer{flex:1}
+.status{color:var(--muted);font-size:12.5px}
+details.import summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.import summary::-webkit-details-marker{display:none}
+details.import summary::before{content:"+";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:700}
+details.import[open] summary::before{content:"–"}
+.import-body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:14px;margin-top:12px}
+.import-body textarea{width:100%;min-height:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.help{color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:6px}
+.help p{margin:0}
+.help code{background:var(--surface-2);padding:1px 5px;border-radius:4px;font-size:12px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);border-left:4px solid var(--tc,var(--line))}
+.card .left{padding:12px 14px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--line)}
+.card .right{padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:0 var(--r) var(--r) 0}
+.name-row{display:flex;gap:8px;align-items:center}
+.name-row input{flex:1;font-weight:600;background:transparent;border-color:transparent;padding-left:4px;font-size:15px}
+.name-row input:hover,.name-row input:focus{border-color:var(--line);background:var(--surface-2)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.grid3 select{width:100%}
+.mini{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+details.pts summary{cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:600}
+details.pts[open] summary{margin-bottom:6px}
+.tone-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--tc)}
+.tone-tag::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--tc)}
+.appr{width:100%;min-height:108px;resize:vertical;background:var(--paper);font-size:14.5px;line-height:1.55;border-radius:8px}
+.foot{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.count{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted)}
+.count.over{color:var(--t-A);font-weight:600}
+.pill{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.ai-only,.albert-only{display:none}
+body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
+.help a{color:var(--accent)}
+.pill.ai{background:var(--t-E);color:var(--surface)}
+.guess{font-size:11px;color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
+.confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+@media (max-width:860px){
+  .card{grid-template-columns:minmax(0,1fr)}
+  .card .left{border-right:0;border-bottom:1px solid var(--line)}
+  .card .right{border-radius:0 0 var(--r) 0}
+  .import-body{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){.grid3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Appréciations de bulletin</h1>
+      <p class="sub">Réglez chaque élève en quelques clics : l'appréciation s'écrit toute seule, adaptée au moment de l'année et au ton choisi. Modifiez-la si besoin, ou faites-la rédiger par une IA (Claude ou Albert), puis copiez-la dans PRONOTE.</p>
+    </div>
+    <span class="lock" title="Aucune donnée n'est envoyée sur Internet">● Données gardées dans ce navigateur uniquement</span>
+  </header>
+
+  <section class="panel" aria-label="Réglages de la classe">
+    <div class="row">
+      <label class="field"><span>Classe</span>
+        <select id="cls"></select></label>
+      <div class="actions" id="clsActions">
+        <button id="clsNew" type="button">Nouvelle classe</button>
+        <button id="clsRename" type="button" class="ghost">Renommer</button>
+        <button id="clsDel" type="button" class="ghost danger">Supprimer</button>
+      </div>
+      <span class="spacer"></span>
+      <label class="field"><span>Niveau</span>
+        <select id="niv"><option value="2">Seconde</option><option value="1">Première</option><option value="0">Terminale</option></select></label>
+      <label class="field"><span>Matière</span>
+        <select id="mat"><option value="ms">Maths-sciences</option><option value="m">Mathématiques</option><option value="s">Physique-chimie</option></select></label>
+    </div>
+    <div class="row">
+      <div class="field"><span>Période</span>
+        <div class="seg" id="per">
+          <button type="button" data-v="T1">1er trim.</button><button type="button" data-v="T2">2e trim.</button><button type="button" data-v="T3">3e trim.</button><button type="button" data-v="S1">1er sem.</button><button type="button" data-v="S2">2e sem.</button>
+        </div></div>
+      <div class="field"><span>Longueur</span>
+        <div class="seg" id="len">
+          <button type="button" data-v="140">Courte</button><button type="button" data-v="190">Moyenne</button><button type="button" data-v="280">Longue</button>
+        </div></div>
+      <label class="field"><span>Max. caractères</span>
+        <input type="number" id="max" min="80" max="1000" step="10"></label>
+      <label class="check"><input type="checkbox" id="useName"> Citer le prénom dans l'appréciation</label>
+    </div>
+    <div class="actions">
+      <button class="primary" id="genAll" type="button">Générer toute la classe</button>
+      <button class="ai-only" id="aiAll" type="button">Rédiger toute la classe avec Claude</button>
+      <button class="albert-only" id="albAll" type="button">Rédiger toute la classe avec Albert</button>
+      <button id="copyAll" type="button">Copier toutes les appréciations</button>
+      <button id="add" type="button">Ajouter un élève</button>
+      <span class="spacer"></span>
+      <span class="status" id="status"></span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <details class="import" id="importBox">
+      <summary>Importer une liste d'élèves</summary>
+      <div class="import-body">
+        <div class="field">
+          <textarea id="importTxt" placeholder="DUPONT Léa&#9;13,5&#10;MARTIN Yanis&#9;8,25&#10;…" aria-label="Liste à importer"></textarea>
+          <div class="actions" style="margin-top:8px">
+            <button class="primary" id="importGo" type="button">Ajouter ces élèves</button>
+            <label class="check" style="padding:0"><input type="checkbox" id="importReplace"> Remplacer la liste actuelle</label>
+            <span class="spacer"></span>
+            <label><input type="file" id="importFile" accept=".csv,.txt,text/csv,text/plain"></label>
+          </div>
+        </div>
+        <div class="help">
+          <p><strong>Depuis PRONOTE ou un tableur</strong>, copiez les colonnes « Élève » et « Moyenne » puis collez-les ici. Vous pouvez aussi choisir un fichier CSV exporté.</p>
+          <p>Une ligne par élève. Le nom peut être au format <code>NOM Prénom</code>. La moyenne est facultative (virgule ou point acceptés). Une colonne <code>Sexe</code> (F/G) est reconnue si elle existe.</p>
+          <p>Le genre est deviné à partir du prénom pour accorder les adjectifs. Vérifiez-le sur chaque fiche (bouton F / G).</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+
+  <section class="panel">
+    <details class="import" id="albertBox">
+      <summary>Rédiger avec Albert (IA de l'État)</summary>
+      <div id="albArtifact" class="help" style="margin-top:10px" hidden>
+        <p>Albert ne peut pas être appelé depuis cette page Claude. Utilisez la version en ligne de l'outil : <a href="https://dcottin.github.io/siteweb/outils/appreciations.html" target="_blank" rel="noopener">dcottin.github.io/siteweb/outils/appreciations.html</a>. Vos réglages de classe ne sont pas partagés entre les deux pages.</p>
+      </div>
+      <div id="albForm" class="import-body">
+        <div class="field" style="gap:10px">
+          <label class="field"><span>Clé API Albert</span><input type="password" id="albKeyIn" autocomplete="off" placeholder="Collez la clé créée sur albert.playground.etalab.gouv.fr/keys"></label>
+          <div class="row">
+            <label class="field" style="flex:1"><span>Modèle</span><select id="albModel"></select></label>
+            <button type="button" id="albLoad">Charger les modèles</button>
+          </div>
+          <label class="check" style="padding:0"><input type="checkbox" id="albRemember"> Mémoriser la clé dans ce navigateur</label>
+          <label class="field"><span>Adresse du relais</span><input type="text" id="albProxy" spellcheck="false"></label>
+          <p class="status" id="albState" style="margin:0"></p>
+        </div>
+        <div class="help">
+          <p>Créez une clé sur <a href="https://albert.playground.etalab.gouv.fr/keys" target="_blank" rel="noopener">albert.playground.etalab.gouv.fr/keys</a>, collez-la ici puis choisissez le modèle.</p>
+          <p>Albert reçoit les critères de chaque élève (moyenne, travail, attitude, points à travailler…) mais jamais son nom ni son prénom.</p>
+          <p>La clé reste dans ce navigateur. Elle passe par votre relais Cloudflare, qui ne l'enregistre pas.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+  <main class="list" id="list" aria-live="polite"></main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script id="engine">
+/* ====================== MOTEUR DE RÉDACTION ======================
+   Gabarits : [masc|fém] accorde selon le genre, {Il}/{il} = sujet (prénom au 1er emploi si l'option est cochée),
+   {per} = trimestre/semestre, {mat} = matière. Suffixe @XY = réservé aux tons X, Y.
+   Tons : E élogieux, C encourageant, B bienveillant, F ferme, A alerte. */
+var BANK = {
+open: {
+ 1: [
+  ["Un début d'année très difficile.","Les résultats de ce premier {per} sont très insuffisants.","Premier {per} très préoccupant.@FA","Des résultats très faibles en ce début d'année.","Le début d'année est très compliqué {mat}."],
+  ["Un début d'année difficile.","Les résultats de ce premier {per} sont fragiles.","Des difficultés dès ce début d'année.","Premier {per} en demi-teinte, avec des résultats insuffisants.","Le début d'année est laborieux {mat}."],
+  ["Un début d'année correct dans l'ensemble.","Premier {per} assez satisfaisant, mais les résultats restent à consolider.","Des résultats moyens pour ce début d'année.","Un {per} correct, sans plus.@FA","Le début d'année est convenable, sans être encore pleinement satisfaisant."],
+  ["Bon début d'année.","Un premier {per} satisfaisant.","Des résultats satisfaisants pour ce début d'année.","Bon ensemble pour ce premier {per}.","L'année commence bien {mat}."],
+  ["Très bon début d'année.","Un très bon premier {per}.","Des résultats très satisfaisants pour ce début d'année.","Très bon {per}, les acquis sont solides.","L'année démarre très bien {mat}."],
+  ["Excellent début d'année.","Un premier {per} remarquable.","Des résultats excellents pour ce début d'année.","Un début d'année brillant {mat}.","Excellent premier {per}, à tous points de vue."]
+ ],
+ 2: [
+  ["Un {per} très difficile.","Les résultats sont très insuffisants.","{Per} très préoccupant.@FA","Des résultats très faibles ce {per}."],
+  ["Un {per} difficile.","Les résultats restent fragiles.","{Per} en demi-teinte, avec des résultats insuffisants.","Les résultats sont encore insuffisants ce {per}."],
+  ["Un {per} correct dans l'ensemble.","{Per} assez satisfaisant, mais les résultats sont irréguliers.","Des résultats moyens ce {per}.","Ensemble correct, mais des fragilités demeurent."],
+  ["Bon {per}.","Un {per} satisfaisant.","Des résultats satisfaisants ce {per}.","Bon ensemble ce {per}."],
+  ["Très bon {per}.","Des résultats très satisfaisants ce {per}.","Un très bon {per}, les acquis sont solides.","Très bon ensemble."],
+  ["Excellent {per}.","Un {per} remarquable.","Des résultats excellents ce {per}.","Très beau {per}, d'un excellent niveau."]
+ ],
+ 3: [
+  ["Une année très difficile.","Le bilan annuel est très insuffisant.","Bilan très préoccupant.@FA","Des résultats très faibles sur l'ensemble de l'année."],
+  ["Une année difficile.","Le bilan annuel reste fragile.","Une année en demi-teinte, avec des résultats insuffisants.","Des difficultés tout au long de l'année."],
+  ["Une année correcte dans l'ensemble.","Bilan annuel assez satisfaisant, mais des fragilités demeurent.","Une année moyenne, avec des résultats irréguliers.","Un dernier {per} correct, dans une année moyenne."],
+  ["Bonne année dans l'ensemble.","Un bilan annuel satisfaisant.","Une année satisfaisante.","Bon dernier {per}, qui confirme une année sérieuse."],
+  ["Très bonne année.","Un très bon bilan annuel.","Une très bonne année, les acquis sont solides.","Très bon dernier {per}, dans la lignée de l'année."],
+  ["Excellente année.","Un bilan annuel remarquable.","Une très belle année, avec des résultats excellents.","Excellent dernier {per}, qui conclut une très belle année."]
+ ]
+},
+effortsNoResults: ["Des résultats encore fragiles, mais un travail sérieux qui devrait finir par payer.","Les résultats ne reflètent pas encore les efforts fournis.","Malgré un réel investissement, les résultats restent fragiles.","Le travail est sérieux, même si les résultats ne suivent pas encore."],
+resultsNoWork: ["Des capacités certaines, mais un travail nettement insuffisant.","Les résultats sont corrects, mais ils reposent sur des facilités plus que sur le travail.","Des résultats satisfaisants obtenus sans réel travail, c'est dommage.","Les capacités sont là, le travail beaucoup moins."],
+goodIrregular: ["De bons résultats, mais un travail trop irrégulier pour en tirer le meilleur.","Les résultats sont bons, mais le travail manque de régularité.","Des capacités évidentes, desservies par un travail irrégulier."],
+evo: {
+ upAfterPos: ["La progression depuis le {per} précédent est nette.","Les efforts fournis portent leurs fruits.","Les progrès par rapport au {per} précédent sont réels."],
+ upAfterNeg: ["On note toutefois des progrès par rapport au {per} précédent.","Les résultats sont néanmoins en hausse, c'est encourageant.","Des progrès sont cependant visibles depuis le {per} précédent."],
+ downAfterPos: ["Les résultats sont cependant en recul par rapport au {per} précédent.","Attention toutefois à la baisse par rapport au {per} précédent.","Un léger relâchement est à noter depuis le {per} précédent."],
+ downAfterNeg: ["Les résultats sont en baisse par rapport au {per} précédent.","Le recul par rapport au {per} précédent est inquiétant.@FA","Les résultats baissent encore depuis le {per} précédent."]
+},
+work: [
+ {s:["Le travail est quasiment inexistant.","Aucun travail sérieux n'est fourni.","{Il} ne fournit pas le travail demandé.","Le refus de travailler est manifeste.@FA"], np:["un travail quasi inexistant","une absence de travail"]},
+ {s:["Le travail personnel est insuffisant.","Le travail fourni reste insuffisant.","{Il} ne travaille pas assez, en classe comme à la maison.","Les leçons ne sont pas suffisamment apprises."], np:["un travail insuffisant","un manque de travail personnel","un investissement trop faible"]},
+ {s:["Le travail est trop irrégulier.","L'investissement varie trop d'une séance à l'autre.","Le travail est fait, mais pas toujours avec le soin attendu.","{Il} travaille par à-coups, ce qui limite ses progrès."], np:["un travail irrégulier","un investissement en dents de scie","un travail inégal"]},
+ {s:["Le travail est sérieux.","{Il} travaille avec régularité.","{Il} se montre sérieu[x|se] dans son travail.","Le travail demandé est fait avec sérieux."], np:["un travail sérieux","un travail régulier","un réel sérieux dans le travail"]},
+ {s:["Le travail est sérieux, régulier et soigné.","{Il} s'investit pleinement, en classe comme à la maison.","{Il} fournit un travail rigoureux et constant.","{Il} se montre très impliqué[|e] dans son travail."], np:["un travail sérieux et rigoureux","un investissement constant","un travail régulier et soigné"]}
+],
+conduct: [
+ {s:["Le comportement en classe n'est pas acceptable.","L'attitude en classe perturbe le travail du groupe.","{Il} doit impérativement adopter un comportement adapté en classe.","Les rappels à l'ordre sont beaucoup trop nombreux."], np:["un comportement inacceptable en classe","une attitude qui perturbe la classe"]},
+ {s:["Les bavardages nuisent à la concentration.","Les bavardages sont trop fréquents en classe.","{Il} se laisse trop facilement distraire.","L'attitude en classe manque de concentration."], np:["des bavardages trop fréquents","une concentration trop fluctuante","une attitude parfois dissipée"]},
+ {s:["{Il} doit oser participer davantage à l'oral.","Trop discr[et|ète] en classe, {il} gagnerait à participer davantage.","La participation orale reste trop timide.","{Il} reste trop en retrait pendant les séances."], np:["une participation trop discrète","une attitude un peu trop effacée","une participation orale encore timide"]},
+ {s:["L'attitude en classe est attentive.","Le comportement en classe est adapté.","{Il} est attenti[f|ve] en classe.","{Il} écoute avec attention."], np:["une attitude attentive","un comportement adapté","une bonne écoute en classe"]},
+ {s:["{Il} participe activement et avec pertinence.","Sa participation dynamique enrichit le cours.","{Il} s'implique avec enthousiasme à l'oral.","{Il} est un élément moteur de la classe."], np:["une participation active","une implication remarquable à l'oral","une participation pertinente"]}
+],
+abs: ["Les absences trop nombreuses pénalisent les apprentissages.","De nombreuses absences freinent les progrès.","Les absences répétées font perdre le fil du cours.","L'assiduité doit être irréprochable, les absences pèsent sur les résultats.@FA"],
+lead: {
+ E:["Pour aller encore plus loin, {il} peut {vp}.","{Il} peut encore progresser en veillant à {vp}."],
+ C:["Pour progresser encore, {il} devra {vp}.","{Il} gagnera à {vp}.","Il faut maintenant {vp}."],
+ B:["Il faudra veiller à {vp}.","{Il} gagnera à {vp}.","Il serait bon de {vp}.","Il faudra désormais {vp}."],
+ F:["{Il} doit {vp}.","Il est indispensable de {vp}.","Il faut absolument {vp}."],
+ A:["Il est urgent de {vp}.","{Il} doit impérativement {vp}.","Il devient indispensable de {vp}."]
+},
+close: {
+ 1:{E:["C'est un excellent départ, il faut continuer ainsi.","Une très belle entrée dans l'année, à poursuivre.","Il faut poursuivre sur cette lancée.","Il faut garder ce rythme."],
+    C:["C'est un début encourageant, à poursuivre.","Les bases sont posées, il faut continuer dans cette voie.","Il faut persévérer, les progrès suivront.","Ces efforts doivent se poursuivre au prochain {per}."],
+    B:["Le prochain {per} doit permettre de prendre de bonnes habitudes.","J'attends un investissement plus régulier au prochain {per}.","Je compte sur [lui|elle] pour progresser au prochain {per}.","Avec plus de régularité, les résultats suivront."],
+    F:["Un net changement d'attitude est attendu au prochain {per}.","Un sursaut est indispensable dès le prochain {per}.","Il faut se mettre au travail sans attendre.","J'attends une réaction rapide."],
+    A:["La situation est préoccupante dès le début d'année, il faut réagir rapidement.","Sans réaction immédiate, l'année risque d'être compromise.","Une prise de conscience rapide est indispensable.","Il est urgent de se mettre au travail."]},
+ 2:{E:["Il faut garder ce cap jusqu'à la fin de l'année.","C'est très bien, il faut continuer ainsi.","Une très belle constance, à poursuivre.","Bravo, il faut maintenir ce niveau."],
+    C:["Il faut persévérer, les résultats finiront par suivre.","Il faut persévérer dans cette voie.","Ces progrès doivent se confirmer d'ici la fin de l'année.","C'est encourageant, il faut continuer."],
+    B:["La fin d'année doit permettre de consolider les acquis.","Avec plus de régularité, la fin d'année peut être réussie.","Je compte sur [lui|elle] pour finir l'année sur une bonne dynamique.","Il reste du temps pour progresser, il faut en profiter."],
+    F:["Un sursaut est indispensable d'ici la fin de l'année.","Il faut se ressaisir rapidement.","J'attends une réaction nette d'ici la fin de l'année.","La fin d'année doit marquer un changement d'attitude."],
+    A:["Sans réaction rapide, la fin d'année risque d'être compromise.","La situation devient préoccupante.","Il est urgent de se remettre au travail.","Un changement radical est indispensable."]},
+ 3:{
+  2:{E:["Bravo pour cette très belle année, et bonne continuation en première.","Bravo, et bonne continuation en première.","Une année réussie, bonne continuation en première."],
+     C:["Les efforts de l'année sont à poursuivre en première.","Il faut garder cette dynamique en première.","Bonne continuation en première, en restant sur cette lancée."],
+     B:["Il faudra travailler plus régulièrement en première.","Bonne continuation, avec plus de régularité l'an prochain.","La première demandera davantage de régularité."],
+     F:["Un travail beaucoup plus sérieux sera indispensable l'an prochain.","L'an prochain, il faudra s'investir bien davantage."],
+     A:["Une remise en question profonde s'impose pour l'année prochaine.","L'année prochaine ne pourra pas se dérouler ainsi."]},
+  1:{E:["Bravo, et bonne préparation de l'année de terminale.","Bravo pour cette belle année, à confirmer en terminale.","Une très belle année, de bon augure pour la terminale."],
+     C:["Une année encourageante, à confirmer en terminale.","Ces efforts devront se poursuivre en terminale.","Il faut aborder la terminale avec la même envie."],
+     B:["La terminale demandera plus de régularité.","Il faudra s'investir davantage en terminale, année de l'examen.","La terminale sera exigeante, il faudra s'y préparer."],
+     F:["Un investissement bien plus important sera indispensable en terminale.","La terminale exigera un travail bien plus sérieux."],
+     A:["Sans un travail sérieux dès la rentrée, l'examen sera compromis.","Il faudra changer radicalement d'attitude en terminale."]},
+  0:{E:["Bravo, et tous mes vœux de réussite pour l'examen et la suite du parcours.","Bravo, et bonne réussite pour le baccalauréat.","Une très belle année, bonne continuation pour la suite."],
+     C:["Il faut aborder l'examen avec la même détermination.","Bon courage pour l'examen, les efforts finiront par payer.","Il faut rester mobilisé[|e] jusqu'à l'examen."],
+     B:["Il faut réviser sérieusement pour aborder l'examen dans de bonnes conditions.","Bon courage pour les révisions et pour l'examen.","Des révisions régulières permettront d'aborder l'examen sereinement."],
+     F:["Des révisions sérieuses sont indispensables avant l'examen.","Il faut se mettre aux révisions sans attendre."],
+     A:["L'examen est proche, un travail intensif s'impose sans attendre.","Sans révisions sérieuses, l'examen sera très difficile."]}
+ }
+}
+};
+
+
+/* ---------- phrases supplémentaires (fusionnées dans BANK) ---------- */
+var EXTRA = {
+open: {
+ 1: [
+  ["Ce premier {per} se solde par des résultats très insuffisants.","Les bases ne sont pas acquises en ce début d'année.","Un premier {per} très en dessous des attentes.","Les débuts sont très difficiles, les notions de rentrée ne sont pas acquises."],
+  ["Ce premier {per} est fragile.","Les débuts sont difficiles et les résultats insuffisants.","Les notions de début d'année ne sont pas encore maîtrisées.","Un premier {per} encore en dessous des attentes.","Les premiers résultats de l'année sont décevants."],
+  ["Les résultats de ce premier {per} sont encourageants mais encore fragiles.","Un début d'année honnête, qui demande à être consolidé.","Premier {per} mitigé, avec des réussites mais aussi des lacunes.","Les bases sont en place, mais encore fragiles.","Un début d'année en demi-teinte, avec des résultats corrects mais irréguliers."],
+  ["Les résultats de ce premier {per} sont satisfaisants.","Un début d'année sérieux, avec de bons résultats.","Premier {per} réussi dans l'ensemble.","Les notions abordées depuis la rentrée sont bien comprises.","Une bonne entrée dans l'année."],
+  ["Un premier {per} très réussi.","Les notions de début d'année sont très bien maîtrisées.","Des résultats solides et réguliers depuis la rentrée.","Un début d'année très convaincant.","Une très bonne entrée dans l'année."],
+  ["Un début d'année exemplaire.","Les résultats de ce premier {per} sont remarquables.","Une maîtrise remarquable des notions abordées depuis la rentrée.","Un premier {per} d'un excellent niveau.","Une entrée dans l'année tout à fait remarquable."]
+ ],
+ 2: [
+  ["Ce {per} est très en dessous des attentes.","Les lacunes restent importantes.","Le {per} se solde par des résultats très faibles.","Les difficultés restent très importantes ce {per}."],
+  ["Les difficultés n'ont pas encore été surmontées.","Le {per} reste en dessous des attentes.","Les acquis sont encore trop fragiles.","Un {per} en demi-teinte.","Les résultats peinent à décoller ce {per}."],
+  ["Un {per} honnête, sans plus.@FA","Les résultats sont corrects mais manquent de régularité.","Un {per} mitigé, avec des réussites et des fragilités.","Les acquis se consolident peu à peu.","Un {per} correct, avec des résultats encore inégaux."],
+  ["Les résultats de ce {per} sont satisfaisants.","Un {per} réussi dans l'ensemble.","Les notions sont bien comprises ce {per}.","Un bon {per}, solide et régulier.","Le {per} est réussi."],
+  ["Un très bon {per}, avec des résultats solides.","Les notions sont très bien maîtrisées ce {per}.","Un {per} très réussi.","Des résultats très solides ce {per}.","Le niveau est très bon ce {per}."],
+  ["Un {per} d'un excellent niveau.","Les résultats sont remarquables ce {per}.","Une très grande aisance ce {per}.","Un {per} brillant.","Le niveau est excellent ce {per}."]
+ ],
+ 3: [
+  ["L'année se termine sur des résultats très insuffisants.","Les lacunes restent très importantes en fin d'année.","Une année très en dessous des attentes.","Le bilan de l'année est très préoccupant.@FA"],
+  ["L'année reste en dessous des attentes.","Les acquis de l'année sont encore fragiles.","Une année compliquée, avec des résultats insuffisants.","Le bilan de l'année est mitigé.","L'année se termine sur des résultats fragiles."],
+  ["Une année honnête, mais des acquis encore fragiles.","Le bilan de l'année est correct, sans plus.@FA","Une année mitigée, avec des réussites et des fragilités.","Les acquis de l'année sont corrects dans l'ensemble.","L'année se termine sur des résultats corrects."],
+  ["Une année réussie dans l'ensemble.","Le bilan de l'année est satisfaisant.","Une année sérieuse, avec de bons résultats.","Les acquis de l'année sont solides.","L'année se termine sur de bons résultats."],
+  ["Une très bonne année, solide et régulière.","Le bilan de l'année est très positif.","Une année très réussie.","Les acquis de l'année sont très solides.","L'année se termine sur de très bons résultats."],
+  ["Une année brillante.","Le bilan de l'année est excellent.","Une année remarquable du début à la fin.","Une très belle année, d'un excellent niveau.","L'année se termine sur d'excellents résultats."]
+ ]
+},
+effortsNoResults: ["Les efforts sont réels, même si les résultats tardent à suivre.","Le sérieux est au rendez-vous, mais les résultats restent fragiles.","Un travail régulier qui ne se traduit pas encore dans les résultats.","Les résultats ne sont pas encore à la hauteur de l'investissement fourni."],
+resultsNoWork: ["Les résultats tiennent encore, mais le travail fourni ne suffira pas longtemps.","Des facilités évidentes, mais un manque de travail qui finira par se payer.","Les capacités sont réelles, mais le travail ne suit pas.","Des résultats corrects, obtenus sans véritable effort, c'est dommage."],
+goodIrregular: ["Des résultats solides, mais un sérieux trop variable d'une séance à l'autre.","Les capacités sont là, mais le travail manque de constance.","De bons résultats, qui pourraient être meilleurs avec plus de régularité."],
+evo: {
+ upAfterPos: ["Le {per} confirme une progression réelle.","Les progrès sont nets depuis le {per} précédent.","La dynamique est très positive."],
+ upAfterNeg: ["Les progrès depuis le {per} précédent sont toutefois réels.","La tendance est néanmoins à la hausse.","Les efforts commencent pourtant à se voir dans les résultats."],
+ downAfterPos: ["Les résultats sont un peu en retrait par rapport au {per} précédent.","Une petite baisse est à noter depuis le {per} précédent."],
+ downAfterNeg: ["La baisse par rapport au {per} précédent doit alerter.","Les résultats continuent de baisser.","La situation s'est dégradée depuis le {per} précédent."]
+},
+work: [
+ {s:["Le travail demandé n'est presque jamais fait.","{Il} ne s'investit pas dans le travail proposé.","Les exercices ne sont ni commencés en classe ni faits à la maison."], np:["un refus de s'investir","un manque total d'investissement"]},
+ {s:["Le travail reste très superficiel.","{Il} se contente du strict minimum.","L'investissement est nettement insuffisant.","Les exercices sont trop souvent laissés de côté."], np:["un travail trop superficiel","un manque d'investissement"]},
+ {s:["Le sérieux varie selon les séances.","{Il} alterne des moments d'investissement et des périodes de relâchement.","Les efforts sont réels, mais pas assez réguliers.","Le travail manque encore de constance."], np:["un manque de régularité","un travail encore inconstant"]},
+ {s:["{Il} fait preuve de sérieux.","Le travail est régulier et appliqué.","{Il} s'applique dans le travail demandé.","{Il} travaille de façon sérieuse et appliquée."], np:["un travail appliqué","un investissement sérieux"]},
+ {s:["{Il} s'investit avec beaucoup de sérieux.","Le travail est d'une grande rigueur.","{Il} travaille avec autant de sérieux que de régularité.","L'investissement est exemplaire."], np:["un investissement exemplaire","un travail d'une grande rigueur"]}
+],
+conduct: [
+ {s:["L'attitude en classe est inadaptée et doit changer.","Le comportement nuit à ses apprentissages comme à ceux des autres.","{Il} ne respecte pas suffisamment les règles de la classe."], np:["une attitude inadaptée","un comportement qui nuit à la classe"]},
+ {s:["{Il} se disperse trop souvent.","Le bavardage freine ses progrès.","La concentration fait trop souvent défaut.","{Il} est trop souvent tourné[|e] vers ses voisins."], np:["une dispersion trop fréquente","un manque de concentration"]},
+ {s:["{Il} participe peu, alors que ses interventions sont souvent justes.","{Il} gagnerait à se manifester davantage à l'oral.","{Il} ne pose pas assez de questions.","La participation orale est encore trop rare."], np:["une participation trop rare","une attitude très réservée"]},
+ {s:["L'écoute en classe est de qualité.","{Il} suit le cours avec attention.","L'attitude en classe est posée et attentive.","{Il} se montre attenti[f|ve] et respectueu[x|se]."], np:["une écoute attentive","une attitude posée en classe"]},
+ {s:["{Il} participe volontiers et avec justesse.","Ses interventions orales sont pertinentes.","{Il} prend souvent la parole à bon escient.","{Il} s'implique pleinement dans la vie de la classe."], np:["une participation riche et pertinente","une implication réelle à l'oral"]}
+],
+abs: ["Les absences, trop fréquentes, empêchent de progresser.","Les nombreuses absences rendent le suivi difficile.","L'assiduité doit s'améliorer pour progresser."],
+lead: {
+ E:["{Il} devra toutefois veiller à {vp}.","Pour gagner encore en aisance, {il} peut {vp}.","{Il} peut viser encore plus haut en prenant soin de {vp}."],
+ C:["La prochaine étape sera de {vp}.","Pour franchir un cap, {il} devra {vp}.","Il faudra désormais {vp}.","{Il} doit maintenant {vp}."],
+ B:["L'objectif est maintenant de {vp}.","Pour progresser, il faudra {vp}.","Il est important de {vp}.","Il faudra simplement {vp}."],
+ F:["{Il} doit impérativement {vp}.","J'attends que {il} prenne l'habitude de {vp}.","Il est temps de {vp}.","Il faudra sans faute {vp}."],
+ A:["Il faut, sans attendre, {vp}.","La priorité absolue est de {vp}.","Il est impératif de {vp}."]
+},
+close: {
+ 1:{E:["Une très belle dynamique, à entretenir.","C'est un très bon départ.","La suite de l'année s'annonce bien.","Il faut garder cette belle énergie."],
+    C:["C'est sur la bonne voie, il faut continuer.","Les efforts finiront par payer.","Il faut garder cette motivation.","Je compte sur [lui|elle] pour poursuivre sur cette lancée."],
+    B:["Le potentiel est là, il faut s'en donner les moyens.","Il reste toute l'année pour progresser.","Les progrès viendront avec un travail plus régulier.","Courage, rien n'est figé."],
+    F:["J'attends un changement d'attitude rapide.","Il est temps de se mettre sérieusement au travail.","La suite de l'année dépend du travail fourni dès maintenant."],
+    A:["Une réaction rapide est indispensable.","L'année ne peut pas continuer ainsi.","Il faut réagir dès maintenant."]},
+ 2:{E:["Un parcours très réussi jusqu'ici.","Il faut conserver cette belle régularité.","La fin d'année s'annonce très bien."],
+    C:["Il faut continuer sur cette voie.","Les progrès sont là, il faut les confirmer.","Je compte sur [lui|elle] pour garder cette dynamique."],
+    B:["Il faut profiter de la fin d'année pour combler les lacunes.","Avec davantage de régularité, les résultats suivront.","Le potentiel est là, il faut l'exploiter d'ici la fin de l'année."],
+    F:["La fin d'année doit être bien plus sérieuse.","Il faut se remettre au travail sans tarder.","J'attends un investissement bien plus important."],
+    A:["La fin d'année doit absolument marquer un changement.","Il est encore temps de réagir, mais il faut le faire maintenant."]},
+ 3:{
+  2:{E:["Une très belle année, à prolonger en première.","Tous mes vœux de réussite pour la suite."],C:["La première permettra de confirmer ces progrès.","Il faut garder cet état d'esprit l'an prochain."],B:["Il faudra partir sur de meilleures bases en première.","L'an prochain, un travail plus régulier fera la différence."],F:["La première exigera un tout autre investissement."],A:["Sans changement d'attitude, la première sera très difficile."]},
+  1:{E:["Une très belle année, qui prépare bien la terminale.","Tout est réuni pour une belle année de terminale."],C:["La terminale permettra de confirmer ces progrès.","Il faut garder cet état d'esprit pour l'année de l'examen."],B:["Il faudra partir sur de meilleures bases en terminale.","En terminale, un travail plus régulier fera la différence."],F:["L'année de l'examen exigera un tout autre investissement."],A:["Sans changement d'attitude, l'examen sera compromis."]},
+  0:{E:["Tout est réuni pour réussir l'examen.","Une très belle année, bonne réussite pour la suite."],C:["Il faut rester concentré[|e] sur l'objectif de l'examen.","Avec la même régularité, l'examen peut être abordé sereinement."],B:["Des révisions bien organisées feront la différence.","Il faut maintenant tout miser sur les révisions."],F:["Il faut se mobiliser pleinement pour l'examen."],A:["Il faut réagir immédiatement pour ne pas compromettre l'examen."]}
+ }
+},
+/* ouvertures en groupe nominal, pour les phrases liées : « Un bon trimestre, porté par un travail sérieux. »
+   genre : m, f, p (pluriel masculin) */
+openNP: {
+ 1:[["Un début d'année très difficile|m","Un premier {per} très insuffisant|m"],["Un début d'année difficile|m","Un premier {per} fragile|m"],["Un début d'année correct|m","Un premier {per} honnête|m"],["Un bon début d'année|m","Un premier {per} satisfaisant|m"],["Un très bon début d'année|m","Un très bon premier {per}|m"],["Un excellent début d'année|m","Un premier {per} remarquable|m"]],
+ 2:[["Un {per} très difficile|m","Des résultats très insuffisants|p"],["Un {per} difficile|m","Des résultats fragiles|p"],["Un {per} correct|m","Des résultats moyens|p"],["Un bon {per}|m","Des résultats satisfaisants|p"],["Un très bon {per}|m","De très bons résultats|p"],["Un excellent {per}|m","D'excellents résultats|p"]],
+ 3:[["Une année très difficile|f","Un bilan très insuffisant|m"],["Une année difficile|f","Un bilan fragile|m"],["Une année correcte|f","Un bilan moyen|m"],["Une bonne année|f","Un bilan satisfaisant|m"],["Une très bonne année|f","Un très bon bilan|m"],["Une excellente année|f","Un excellent bilan|m"]]
+}
+};
+(function merge(a,b){
+  Object.keys(b).forEach(function(k){
+    if(Array.isArray(b[k])){
+      if(!a[k]) a[k]=[];
+      if(b[k].length&&typeof b[k][0]==="string") a[k]=a[k].concat(b[k]);
+      else b[k].forEach(function(x,i){ if(typeof x==="object"&&!Array.isArray(x)) merge(a[k][i]=a[k][i]||{},x); else if(Array.isArray(x)) a[k][i]=(a[k][i]||[]).concat(x); });
+    } else if(typeof b[k]==="object"){ merge(a[k]=a[k]||{},b[k]); }
+  });
+})(BANK,EXTRA);
+/* liaisons ouverture + travail */
+var LINK = {
+ pp:[" grâce à {w}.",", avec {w}."],
+ pn:[", malgré {w}.",", mais avec {w}."],
+ np:[", malgré {w}."],
+ nn:[", en raison de {w}.",", avec {w}."],
+ mn:[", avec {w}."],
+ mp:[", avec {w}."]
+};
+/* ---------- style sobre : formules trop appuyées retirées ---------- */
+var TOO_MUCH = ["L'attitude en classe manque de concentration.","Excellent premier {per}, à tous points de vue.","Un début d'année brillant {mat}.","Un {per} brillant.","Une année brillante.","Une année remarquable du début à la fin.","Une entrée dans l'année tout à fait remarquable.","Une maîtrise remarquable des notions abordées depuis la rentrée.","Un début d'année exemplaire.","Un bilan annuel remarquable.","Un premier {per} remarquable.","Un {per} remarquable.","Les résultats de ce premier {per} sont remarquables.","Les résultats sont remarquables ce {per}.","Une très grande aisance ce {per}.","Très beau {per}, d'un excellent niveau.","Une très belle année, d'un excellent niveau.","Un premier {per} d'un excellent niveau.","Un {per} d'un excellent niveau.","Excellent dernier {per}, qui conclut une très belle année.","Un début d'année très convaincant.","L'année démarre très bien {mat}.","Le début d'année est très compliqué {mat}.","Le début d'année est laborieux {mat}.","Le début d'année est convenable, sans être encore pleinement satisfaisant.",
+"Un parcours très réussi jusqu'ici.","Une très belle dynamique, à entretenir.","Il faut garder cette belle énergie.","La dynamique est très positive.","Une très belle constance, à poursuivre.","Il faut conserver cette belle régularité.","La fin d'année s'annonce très bien.","La suite de l'année s'annonce bien.","Tout est réuni pour réussir l'examen.","Tout est réuni pour une belle année de terminale.","Une très belle année, de bon augure pour la terminale.","Une très belle entrée dans l'année, à poursuivre.","Courage, rien n'est figé.","Le potentiel est là, il faut s'en donner les moyens.","Le potentiel est là, il faut l'exploiter d'ici la fin de l'année.","Il faut maintenant tout miser sur les révisions.","Il faut aborder la terminale avec la même envie.","Il faut aborder l'examen avec la même détermination.","Il faut garder cet état d'esprit l'an prochain.","Il faut garder cet état d'esprit pour l'année de l'examen.","Il faut se mobiliser pleinement pour l'examen.","Une remise en question profonde s'impose pour l'année prochaine.","Un changement radical est indispensable.","Il faudra changer radicalement d'attitude en terminale.","La priorité absolue est de {vp}.","Il faut, sans attendre, {vp}.","Il faudra sans faute {vp}.","{Il} peut viser encore plus haut en prenant soin de {vp}.","Pour franchir un cap, {il} devra {vp}.","Pour gagner encore en aisance, {il} peut {vp}.","La prochaine étape sera de {vp}.","L'objectif est maintenant de {vp}.","Il faudra simplement {vp}.","J'attends que {il} prenne l'habitude de {vp}.",
+"{Il} est un élément moteur de la classe.","Sa participation dynamique enrichit le cours.","{Il} s'implique avec enthousiasme à l'oral.","{Il} s'implique pleinement dans la vie de la classe.","une implication remarquable à l'oral","une participation riche et pertinente","{Il} travaille avec autant de sérieux que de régularité.","L'investissement est exemplaire.","un investissement exemplaire","Le travail est d'une grande rigueur.","un travail d'une grande rigueur","{Il} s'investit pleinement, en classe comme à la maison.","Le refus de travailler est manifeste.@FA","un refus de s'investir","un manque total d'investissement","Les exercices ne sont ni commencés en classe ni faits à la maison.","Le comportement nuit à ses apprentissages comme à ceux des autres.","{Il} alterne des moments d'investissement et des périodes de relâchement.","un investissement en dents de scie","{Il} participe peu, alors que ses interventions sont souvent justes.","Les résultats tiennent encore, mais le travail fourni ne suffira pas longtemps.","Des facilités évidentes, mais un manque de travail qui finira par se payer.","Les résultats sont corrects, mais ils reposent sur des facilités plus que sur le travail.","Les capacités sont là, le travail beaucoup moins.","Des capacités évidentes, desservies par un travail irrégulier.","Des résultats corrects, obtenus sans véritable effort, c'est dommage.","Des résultats satisfaisants obtenus sans réel travail, c'est dommage.","Le sérieux est au rendez-vous, mais les résultats restent fragiles.","Les efforts commencent pourtant à se voir dans les résultats.","Les résultats peinent à décoller ce {per}.","Les débuts sont très difficiles, les notions de rentrée ne sont pas acquises.","Les absences répétées font perdre le fil du cours.","Les nombreuses absences rendent le suivi difficile.","L'assiduité doit être irréprochable, les absences pèsent sur les résultats.@FA","Il est encore temps de réagir, mais il faut le faire maintenant.","La fin d'année doit absolument marquer un changement.","L'année ne peut pas continuer ainsi.","L'année prochaine ne pourra pas se dérouler ainsi.","Un dernier {per} correct, dans une année moyenne.","Très bon dernier {per}, dans la lignée de l'année.","Bon dernier {per}, qui confirme une année sérieuse.","Bravo pour cette très belle année, et bonne continuation en première.","Bravo, et tous mes vœux de réussite pour l'examen et la suite du parcours.","Une très belle année, avec des résultats excellents.","Une très belle année, bonne continuation pour la suite.","Une très belle année, bonne réussite pour la suite.","Une très belle année, qui prépare bien la terminale.","Une très belle année, à prolonger en première.","Bravo, il faut maintenir ce niveau.","C'est un excellent départ, il faut continuer ainsi.","Bravo pour cette belle année, à confirmer en terminale.","Un très bon {per}, les acquis sont solides.","Une très bonne année, les acquis sont solides.","Très bon {per}, les acquis sont solides.","Un premier {per} très en dessous des attentes.","Les rappels à l'ordre sont beaucoup trop nombreux."];
+var SOBER_ADD = {
+ close:{1:{E:["Il faut continuer ainsi."],C:["Il faut continuer ainsi."]},2:{E:["Il faut continuer ainsi."],C:["Il faut continuer ainsi."]},
+  3:{2:{E:["Bonne continuation en première."]},1:{E:["Bonne continuation en terminale."]},0:{E:["Bonne réussite pour l'examen."]}}}
+};
+(function(){
+  var kill={}; TOO_MUCH.forEach(function(t){kill[t]=1;});
+  (function walk(o){ Object.keys(o).forEach(function(k){ var v=o[k];
+    if(Array.isArray(v)&&v.length&&typeof v[0]==="string"){ var f=v.filter(function(t){return !kill[t];}); o[k]=f.length?f:v; }
+    else if(v&&typeof v==="object") walk(v); }); })(BANK);
+  (function add(a,b){ Object.keys(b).forEach(function(k){ if(Array.isArray(b[k])) a[k]=(a[k]||[]).concat(b[k]); else add(a[k]=a[k]||{},b[k]); }); })(BANK,SOBER_ADD);
+})();
+
+
+var POINTS = [
+ ["lecons","Leçons","apprendre ses leçons plus régulièrement"],
+ ["maison","Travail à la maison","faire le travail demandé à la maison"],
+ ["entrain","S'entraîner","s'entraîner davantage sur les exercices"],
+ ["evals","Évaluations","préparer plus sérieusement les évaluations"],
+ ["redac","Rédaction","soigner la rédaction en justifiant ses réponses"],
+ ["calcul","Calcul","consolider ses automatismes de calcul"],
+ ["methode","Méthodes","appliquer avec plus de rigueur les méthodes vues en cours"],
+ ["soin","Inattention","relire ses réponses pour éviter les erreurs d'inattention"],
+ ["unites","Unités, schémas","être plus rigoureu[x|se] sur les unités et les schémas"],
+ ["tp","TP","s'impliquer davantage lors des travaux pratiques"],
+ ["attention","Concentration","rester concentré[|e] tout au long des séances"],
+ ["bavard","Bavardages","limiter les bavardages"],
+ ["oral","Oral","oser prendre la parole plus souvent"],
+ ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise"],
+ ["autonomie","Autonomie","gagner en autonomie face aux exercices"],
+ ["materiel","Matériel","apporter son matériel à chaque séance"],
+ ["ponct","Ponctualité","arriver à l'heure en cours"]
+];
+var APPUIS = [
+ ["oral","Participation orale","sa participation à l'oral"],
+ ["regul","Régularité","sa régularité dans le travail"],
+ ["auto","Autonomie","son autonomie"],
+ ["soin","Soin","le soin apporté à ses travaux"],
+ ["perse","Persévérance","sa persévérance"],
+ ["methode","Méthode","sa méthode de travail"],
+ ["curio","Curiosité","sa curiosité"],
+ ["tp","Implication en TP","son implication en TP"],
+ ["calcul","Aisance en calcul","son aisance en calcul"],
+ ["raison","Raisonnement","la qualité de son raisonnement"],
+ ["entraide","Entraide","son esprit d'entraide"]
+];
+var APMAP = {}; APPUIS.forEach(function(p){APMAP[p[0]]=p;});
+var PTMAP = {}; POINTS.forEach(function(p){PTMAP[p[0]]=p;});
+var TONES = {E:"Élogieux",C:"Encourageant",B:"Bienveillant",F:"Ferme",A:"Alerte"};
+var MAT = {ms:"en maths-sciences", m:"en mathématiques", s:"en physique-chimie"};
+
+function rngFrom(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function level(moy,w){
+  var m=parseFloat(String(moy).replace(",","."));
+  if(isNaN(m)) return [1,1,2,3,4][w];
+  if(m<7) return 0; if(m<9.5) return 1; if(m<12) return 2; if(m<14.5) return 3; if(m<16.5) return 4; return 5;
+}
+function autoTone(N,W,C){
+  if(N>=4&&W>=3&&C>=2) return "E";
+  if(C===0||W<=1) return N<=1?"A":"F";
+  if(N<=1) return W>=3?"C":(N===0?"A":"F");
+  if(W===2||C===1) return "B";
+  if(N>=3&&W>=3) return (W===4||C===4)?"E":"C";
+  return "C";
+}
+function phaseOf(p){return p==="T1"||p==="S1"?1:(p==="T2"?2:3);}
+function okTone(entry,tone){var i=entry.indexOf("@");return i<0||entry.slice(i+1).indexOf(tone)>=0;}
+function txt(entry){var i=entry.indexOf("@");return i<0?entry:entry.slice(0,i);}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function analyse(st,set){
+  var W=+st.w, C=+st.c, N=level(st.moy,W);
+  var tone = st.ton&&st.ton!=="auto"?st.ton:autoTone(N,W,C);
+  return {N:N,W:W,C:C,tone:tone,phase:phaseOf(set.per)};
+}
+
+function finish(s,st,set){
+  var f=st.g==="f";
+  s=s.replace(/\[([^|\]]*)\|([^\]]*)\]/g,function(m,a,b){return f?b:a;});
+  var per=set.per.charAt(0)==="S"?"semestre":"trimestre";
+  s=s.replace(/\{per\}/g,per).replace(/\{Per\}/g,cap(per)).replace(/\{mat\}/g,MAT[set.mat]||"");
+  var first=true, pre=(st.prenom||"").trim();
+  s=s.replace(/\{(Il|il)\}/g,function(m,k){
+    if(first&&set.useName&&pre){first=false;return pre;}
+    first=false; var p=f?"elle":"il"; return k==="Il"?cap(p):p;
+  });
+  s=s.replace(/\b(de|que|De|Que) (?=[aeiouyhàâéèêîôûAEIOUYÉÈÊÀÂÎÔ])/g,function(m,w){return w.slice(0,-1)+"'";});
+  s=s.replace(/ +/g," ").replace(/ \./g,".").trim();
+  return s;
+}
+
+/* Fabrique une appréciation candidate : liste de [id, texte-gabarit] */
+function candidate(st,set,A,r){
+  var B=BANK, P=A.phase, N=A.N, W=A.W, C=A.C, T=A.tone, out=[];
+  function pick(list,id){
+    var ok=[];for(var i=0;i<list.length;i++) if(okTone(list[i],T)) ok.push(i);
+    if(!ok.length) ok=list.map(function(_,i){return i;});
+    var k=ok[Math.floor(r()*ok.length)]; return [id+":"+k, txt(list[k])];
+  }
+  // 1. ouverture
+  var coversW=false, posOpen=N>=3;
+  if(N<=1&&W>=3&&r()<.65){out.push(pick(B.effortsNoResults,"enr"));coversW=true;posOpen=false;}
+  else if(N>=3&&W<=1&&r()<.65){out.push(pick(B.resultsNoWork,"rnw"));coversW=true;posOpen=false;}
+  else if(N>=4&&W===2&&r()<.6){out.push(pick(B.goodIrregular,"gi"));coversW=true;}
+  else if(r()<.45){
+    var wp=W>=3, key=N===2?(wp?"mp":"mn"):(N>=3?(wp?"pp":"pn"):(wp?"np":"nn"));
+    var on=B.openNP[P][N], oi=Math.floor(r()*on.length), parts=on[oi].split("|");
+    var lk=LINK[key], li=Math.floor(r()*lk.length), wl=B.work[W].np, wi=Math.floor(r()*wl.length);
+    var ag={m:"",f:"e",p:"s"}[parts[1]];
+    out.push(["onp"+P+N+":"+oi, parts[0]+lk[li].replace("{a}",ag).replace("{w}",wl[wi])]);
+    out.push(["lk"+key+":"+li,""]); coversW=true;
+  }
+  else out.push(pick(B.open[P][N],"o"+P+N));
+  // 2. évolution
+  var e=+st.evo;
+  if(P>1&&e!==0&&r()<.9){
+    var key=(e>0?"up":"down")+(posOpen?"AfterPos":"AfterNeg");
+    out.push(pick(B.evo[key],"ev"+key));
+  }
+  // 3. travail et comportement
+  var pts=(st.pts||[]).slice(), userPts=pts.length>0;
+  var showC = (C!==3 || r()<.3) && !(C>=3 && (st.pts||[]).some(function(k){return k==="bavard"||k==="attention";}));
+  if(coversW){ if(showC) out.push(pick(B.conduct[C].s,"cs"+C)); }
+  else if(showC && r()<.5){
+    var w=B.work[W].np, c=B.conduct[C].np;
+    var wi=Math.floor(r()*w.length), ci=Math.floor(r()*c.length);
+    var wp=W>=3, cp=C>=3, s;
+    if(wp===cp) s=cap(w[wi])+((r()<.5||!wp)&&w[wi].indexOf(" et ")<0?" et ":", avec ")+c[ci]+".";
+    else if(wp) s=cap(w[wi])+", mais "+c[ci]+".";
+    else s=cap(c[ci])+", mais "+w[wi]+".";
+    out.push(["np"+W+C+":"+wi+ci,s]);
+  } else {
+    out.push(pick(B.work[W].s,"ws"+W));
+    if(showC) out.push(pick(B.conduct[C].s,"cs"+C));
+  }
+  // évite la redite entre la phrase de comportement et les points
+  if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
+  // 3 bis. points d'appui et détail observé
+  var ap=(st.appui||[]).filter(function(k){return APMAP[k];});
+  if(ap.length&&r()<.9){
+    ap=ap.slice().sort(function(){return r()-.5;}).slice(0,2);
+    var np=ap.map(function(k){return APMAP[k][2];}).join(" et "), forms;
+    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui."]
+                       :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+"."];
+    var fi=Math.floor(r()*forms.length); out.push(["ap:"+fi,forms[fi]]);
+  }
+  var det=(st.detail||"").trim();
+  if(det){det=cap(det); if(!/[.!?]$/.test(det)) det+="."; out.push(["det:0",det]);}
+  // 4. absences
+  if(st.abs) out.push(pick(B.abs,"ab"));
+  // 5. points à travailler
+  if(!userPts){
+    var auto=[];
+    if(W<=1) auto.push("lecons","maison"); else if(W===2) auto.push("lecons","evals");
+    if(C===1&&!showC) auto.push("bavard"); if(C===2&&!showC) auto.push("oral");
+    if(N<=2&&W>=3) auto.push("entrain","questions","methode");
+    if(N===3&&W>=3) auto.push("redac","soin");
+    if(auto.length&&T!=="E"&&r()<.75) pts=[auto[Math.floor(r()*auto.length)]];
+    else pts=[];
+  }
+  // points de comportement : une phrase à part, plus naturelle
+  var BEH={bavard:[["Attention toutefois aux bavardages.","Il faudra toutefois limiter les bavardages."],["Les bavardages doivent cesser.","Les bavardages doivent impérativement cesser."]],
+           attention:[["Attention toutefois à ne pas se disperser.","Il faudra toutefois rester concentré[|e] tout au long des séances."],["La concentration doit s'améliorer nettement.","Il faut rester concentré[|e] pendant toute la séance."]],
+           ponct:[["Attention toutefois aux retards.","Il faudra toutefois veiller à arriver à l'heure."],["Les retards doivent cesser.","La ponctualité doit être respectée."]],
+           materiel:[["Attention toutefois à ne pas oublier son matériel.","Il faudra toutefois penser à apporter son matériel."],["Le matériel doit être apporté à chaque séance.","Les oublis de matériel doivent cesser."]]};
+  var beh=pts.filter(function(k){return BEH[k];}); pts=pts.filter(function(k){return !BEH[k];});
+  var behS=null;
+  if(beh.length){var bk=beh[Math.floor(r()*beh.length)], firm=(T==="F"||T==="A")?1:0, bl=BEH[bk][firm], bi=Math.floor(r()*bl.length);
+    if(firm) behS=["bh"+bk+firm+":"+bi,bl[bi]]; else behS=["bh"+bk+firm+":"+bi, pts.length?bl[bi]:bl[bi].replace(" toutefois","")];}
+  if(pts.length){
+    // mélange puis 1 ou 2 points
+    pts=pts.slice().sort(function(){return r()-.5;});
+    var n=1, chosen=pts.slice(0,n);
+    var vp=chosen.map(function(k){return PTMAP[k][2];}).join(" et ");
+    var L=pick(B.lead[T],"ld"+T);
+    out.push([L[0]+":"+chosen.join("+"),L[1].replace("{vp}",vp)]);
+    if(pts.length>1&&userPts&&r()<.6){
+      var vp2=pts.slice(n,n+1).map(function(k){return PTMAP[k][2];}).join(" et ");
+      out.push(["pt2:"+pts.slice(n,n+1).join("+"),"Il faudra aussi "+vp2+"."]);
+    }
+  }
+  if(behS) out.push(behS);
+  // 6. conclusion
+  if(r()<.7){
+    var cl = P===3 ? B.close[3][set.niv][T] : B.close[P][T];
+    out.push(pick(cl,"cl"+P+T));
+  }
+  return out;
+}
+
+function generate(st,set,usage,seed){
+  var A=analyse(st,set), r=rngFrom(seed), best=null, target=+set.len, max=+set.max||9999;
+  for(var k=0;k<90;k++){
+    var parts=candidate(st,set,A,r);
+    var text=finish(parts.map(function(p){return p[1];}).filter(Boolean).join(" "),st,set);
+    var score=Math.abs(text.length-target);
+    if(text.length>max) score+=1000+(text.length-max);
+    parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
+    var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){if(seen[w])score+=9;seen[w]=1;});
+    var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<3&&target>=180) score+=40;
+    score+=r()*12;
+    if(!best||score<best.score) best={score:score,text:text,ids:parts.map(function(p){return p[0].split(":")[0]+":"+p[0].split(":")[1];})};
+  }
+  best.tone=A.tone; return best;
+}
+if(typeof module!=="undefined") module.exports={generate:generate,analyse:analyse,POINTS:POINTS,APPUIS:APPUIS};
+</script>
+
+<script>
+(function(){
+var KEY="appreciations-bulletin-v1";
+var $=function(id){return document.getElementById(id);};
+function uid(){return Math.random().toString(36).slice(2,9);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+/* ---------- genre deviné à partir du prénom ---------- */
+function norm(s){return s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();}
+var MALE=new Set("baptiste maxime alexandre pierre guillaume jerome theophile antoine achille aurele auguste basile emile jose jeremie remi andre rene noe luca mattia nicola andrea joshua moussa mustapha hamza yahya issa souleymane ousmane zakaria rayane sofiane amine yacine adame wassime aymane stephane christophe philippe georges lyes ilyes kylliane jean-baptiste come rafael raphael gabriel samuel daniel mickael michael ange yohane mathias".split(" "));
+var FEMALE=new Set("ines agnes manon marion alison lilou margaux chloe zoe salome anais maelys lou ninon myriam miriam meryem maryam mariam nour sarah kenza lison gwen alix maud ruth carmen ilham sihem fatou eden lily lilly romy jade suzy elif esther judith rachel abigail emmy noor".split(" "));
+function guessG(pre){
+  var p=norm((pre||"").split(/[\s-]/)[0]||"");
+  if(!p) return "m";
+  if(FEMALE.has(p)) return "f"; if(MALE.has(p)) return "m";
+  return /(a|e|ie|ine|ah)$/.test(p)?"f":"m";
+}
+function splitName(full){
+  var t=full.trim().split(/\s+/), nom=[], pre=[];
+  t.forEach(function(w){ (/[a-zà-ÿ]/.test(w)?pre:nom).push(w); });
+  if(!pre.length) return {prenom:"",nom:full.trim()};
+  if(!nom.length) return {prenom:t[0],nom:t.slice(1).join(" ")};
+  return {prenom:pre.join(" "),nom:nom.join(" ")};
+}
+
+/* ---------- données ---------- */
+function newStudent(o){
+  o=o||{};
+  var full=o.name||"Nouvel élève", sp=splitName(full);
+  var g=o.g||guessG(sp.prenom);
+  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
+}
+function sample(){
+  var s=[
+    newStudent({name:"Exemple — BERNARD Chloé",moy:"16,4",w:4,c:4,evo:1,appui:["raison","auto"]}),
+    newStudent({name:"Exemple — HAMIDI Yanis",moy:"8,2",w:3,c:2,pts:["entrain","questions"],appui:["perse"],detail:"le TP sur la loi d'Ohm a été mené avec beaucoup de soin"}),
+    newStudent({name:"Exemple — LEROY Mathis",moy:"13,1",w:1,c:1}),
+    newStudent({name:"Exemple — DIALLO Awa",moy:"11,5",w:2,c:3,pts:["lecons","redac"]}),
+    newStudent({name:"Exemple — MOREAU Kévin",moy:"5,6",w:0,c:0,abs:true}),
+    newStudent({name:"Exemple — PETIT Inès",moy:"14,2",w:3,c:3,pts:["unites"]})
+  ];
+  return {id:uid(),name:"Classe exemple",niv:"1",mat:"ms",per:"T1",len:"190",max:"250",useName:false,students:s};
+}
+var DB=null;
+function load(){
+  try{var raw=localStorage.getItem(KEY); if(raw){DB=JSON.parse(raw);}}catch(e){}
+  if(!DB||!DB.classes||!DB.classes.length){DB={classes:[sample()],cur:null};}
+  DB.classes.forEach(function(c){c.len={"150":"140","220":"190","320":"280"}[c.len]||c.len;});
+  if(!DB.cur||!DB.classes.some(function(c){return c.id===DB.cur;})) DB.cur=DB.classes[0].id;
+}
+var saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}},250);}
+function cls(){return DB.classes.find(function(c){return c.id===DB.cur;});}
+function settings(){var c=cls();return {niv:c.niv,mat:c.mat,per:c.per,len:c.len,max:c.max,useName:c.useName};}
+
+/* ---------- génération ---------- */
+function usageExcept(st){
+  var u={};cls().students.forEach(function(o){if(o!==st)(o.ids||[]).forEach(function(i){u[i]=(u[i]||0)+1;});});return u;
+}
+function regen(st,newSeed){
+  if(newSeed) st.seed=(Math.random()*1e9)|0;
+  var g=generate(st,settings(),usageExcept(st),st.seed);
+  st.txt=g.text;st.ids=g.ids;st.edited=false;st.ai=false;
+}
+function genAll(force){
+  var c=cls(),u={},skipped=0;
+  c.students.forEach(function(st){
+    if(st.edited&&!force){skipped++;(st.ids||[]).forEach(function(i){u[i]=(u[i]||0)+1;});return;}
+  });
+  c.students.forEach(function(st){
+    if(st.edited&&!force) return;
+    st.seed=(Math.random()*1e9)|0;
+    var g=generate(st,settings(),u,st.seed);
+    st.txt=g.text;st.ids=g.ids;st.edited=false;st.ai=false;
+    g.ids.forEach(function(i){u[i]=(u[i]||0)+1;});
+  });
+  return skipped;
+}
+
+/* ---------- rendu ---------- */
+var WL=["Très insuffisant","Insuffisant","Irrégulier","Sérieux","Très investi"];
+var CL=["Perturbateur","Bavard, dissipé","Discret, passif","Attentif","Moteur, participatif"];
+function opts(list,val){return list.map(function(l,i){return '<option value="'+i+'"'+(+val===i?" selected":"")+">"+l+"</option>";}).join("");}
+function toneOf(st){return analyse(st,settings()).tone;}
+
+function cardHTML(st){
+  var set=settings(), tone=toneOf(st), ph=analyse(st,set).phase, max=+set.max||0, n=st.txt.length;
+  var tsel='<option value="auto"'+(st.ton==="auto"?" selected":"")+'>Auto ('+TONES[tone].toLowerCase()+')</option>'+
+    Object.keys(TONES).map(function(k){return '<option value="'+k+'"'+(st.ton===k?" selected":"")+">"+TONES[k]+"</option>";}).join("");
+  var chips=POINTS.map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var appui=st.appui||[];
+  var apchips=APPUIS.map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var apch=appui.map(function(k){return APMAP[k][1];}).join(", ");
+  var chosen=st.pts.map(function(k){return PTMAP[k][1];}).join(", ");
+  return ''+
+  '<div class="left">'+
+    '<div class="name-row"><input type="text" data-f="name" id="n-'+st.id+'" value="'+esc(st.name)+'" aria-label="Nom de l\'élève">'+
+      '<button type="button" class="ghost danger" data-act="del" title="Retirer cet élève" aria-label="Retirer cet élève">✕</button></div>'+
+    '<div class="mini">'+
+      '<div class="field"><span>Genre</span><div class="seg" data-seg="g"><button type="button" data-v="f" aria-pressed="'+(st.g==="f")+'">F</button><button type="button" data-v="m" aria-pressed="'+(st.g==="m")+'">G</button></div></div>'+
+      '<label class="field"><span>Moyenne</span><input type="number" min="0" max="20" step="0.01" data-f="moy" id="m-'+st.id+'" value="'+esc(String(st.moy).replace(",","."))+'" placeholder="—"></label>'+
+      '<div class="field"><span>Évolution</span><div class="seg" data-seg="evo">'+
+        [[-1,"En baisse","↘"],[0,"Stable","="],[1,"En hausse","↗"]].map(function(e){return '<button type="button" data-v="'+e[0]+'" title="'+e[1]+'" aria-label="'+e[1]+'" aria-pressed="'+(+st.evo===e[0])+'"'+(ph===1?" disabled":"")+">"+e[2]+"</button>";}).join("")+
+      '</div></div>'+
+      '<label class="check"><input type="checkbox" data-f="abs"'+(st.abs?" checked":"")+'> Absences</label>'+
+    '</div>'+
+    '<div class="grid3">'+
+      '<label class="field"><span>Travail</span><select data-f="w" id="w-'+st.id+'">'+opts(WL,st.w)+'</select></label>'+
+      '<label class="field"><span>Attitude</span><select data-f="c" id="c-'+st.id+'">'+opts(CL,st.c)+'</select></label>'+
+      '<label class="field"><span>Ton</span><select data-f="ton" id="t-'+st.id+'">'+tsel+'</select></label>'+
+    '</div>'+
+    '<details class="pts"'+(st._openA?" open":"")+' data-d="a"><summary>Points d\'appui'+(apch?" : "+esc(apch):"")+'</summary><div class="chips">'+apchips+'</div></details>'+
+    '<details class="pts"'+(st._open?" open":"")+' data-d="p"><summary>Points à travailler'+(chosen?" : "+esc(chosen):" (choisis automatiquement si vide)")+'</summary><div class="chips">'+chips+'</div></details>'+
+    '<label class="field"><span>Détail observé (facultatif)</span><input type="text" data-f="detail" id="d-'+st.id+'" value="'+esc(st.detail||"")+'" placeholder="ex. : très bon exposé sur le recyclage de l\'acier"></label>'+
+  '</div>'+
+  '<div class="right">'+
+    '<div class="foot"><span class="tone-tag">'+TONES[tone]+'</span>'+(st.ai?'<span class="pill ai">Rédigée par '+(st.ai==="albert"?"Albert":"Claude")+'</span>':(st.edited?'<span class="pill">Modifiée à la main</span>':''))+
+      (st.gGuess?'<span class="guess">genre deviné</span>':'')+'<span class="spacer"></span>'+
+      '<span class="count'+(max&&n>max?" over":"")+'">'+n+(max?" / "+max:"")+' car.</span></div>'+
+    '<textarea class="appr" data-f="txt" id="a-'+st.id+'" aria-label="Appréciation"'+(st._busy?" disabled placeholder=\"Rédaction en cours…\"":"")+'>'+(st._busy?"":esc(st.txt))+'</textarea>'+
+    '<div class="foot"><button type="button" class="primary" data-act="copy">Copier</button><button type="button" data-act="regen">Autre version</button><button type="button" class="ai-only" data-act="ai">Rédiger avec Claude</button><button type="button" class="albert-only" data-act="albert">Rédiger avec Albert</button></div>'+
+  '</div>';
+}
+function paintCard(el,st){
+  var tone=toneOf(st);
+  el.style.setProperty("--tc","var(--t-"+tone+")");
+  el.innerHTML=cardHTML(st);
+}
+function renderList(){
+  var c=cls(), list=$("list"); list.innerHTML="";
+  if(!c.students.length){list.innerHTML='<div class="empty">Aucun élève dans cette classe. Importez une liste ou cliquez sur « Ajouter un élève ».</div>';return;}
+  c.students.forEach(function(st){
+    var el=document.createElement("article");el.className="card";el.dataset.id=st.id;paintCard(el,st);list.appendChild(el);
+  });
+  status();
+}
+function refreshCard(st,keepFocus){
+  var el=document.querySelector('.card[data-id="'+st.id+'"]'); if(!el) return;
+  var a=document.activeElement, fid=a&&a.id, ss=a&&a.selectionStart, se=a&&a.selectionEnd;
+  st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open;
+  paintCard(el,st);
+  if(keepFocus&&fid){var f=$(fid); if(f){f.focus(); try{if(ss!=null&&f.setSelectionRange) f.setSelectionRange(ss,se);}catch(e){}}}
+}
+function renderSettings(){
+  var c=cls();
+  $("cls").innerHTML=DB.classes.map(function(k){return '<option value="'+k.id+'"'+(k.id===c.id?" selected":"")+">"+esc(k.name)+"</option>";}).join("");
+  $("niv").value=c.niv;$("mat").value=c.mat;$("max").value=c.max;$("useName").checked=!!c.useName;
+  [["per",c.per],["len",c.len]].forEach(function(p){$(p[0]).querySelectorAll("button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.v===p[1]));});});
+}
+function status(msg){
+  var c=cls(), n=c.students.length, over=c.students.filter(function(s){return c.max&&s.txt.length>+c.max;}).length;
+  $("status").textContent=msg||(n+" élève"+(n>1?"s":"")+(over?" · "+over+" appréciation"+(over>1?"s":"")+" trop longue"+(over>1?"s":""):""));
+}
+var toastT;function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove("on");},1600);}
+function copyText(text,fallbackEl){
+  function fb(){ if(fallbackEl){fallbackEl.focus();fallbackEl.select();try{document.execCommand("copy");toast("Copié");}catch(e){toast("Sélectionné : faites Ctrl+C");}} else toast("Copie impossible ici"); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast("Copié");},fb);} else fb();
+}
+
+/* ---------- événements des fiches ---------- */
+var list=$("list"), moyT={};
+function stOf(el){var card=el.closest(".card");if(!card)return null;var id=card.dataset.id;return cls().students.find(function(s){return s.id===id;});}
+list.addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b) return; var st=stOf(b); if(!st) return;
+  var segEl=b.closest("[data-seg]");
+  if(segEl&&!b.disabled){var k=segEl.dataset.seg;st[k]=k==="evo"?+b.dataset.v:b.dataset.v;if(k==="g")st.gGuess=false;if(!st.edited)regen(st,false);refreshCard(st);save();status();return;}
+  if(b.dataset.ap){st.appui=st.appui||[];var j=st.appui.indexOf(b.dataset.ap);if(j>=0)st.appui.splice(j,1);else st.appui.push(b.dataset.ap);if(!st.edited)regen(st,false);refreshCard(st);save();return;}
+  if(b.dataset.pt){var i=st.pts.indexOf(b.dataset.pt);if(i>=0)st.pts.splice(i,1);else st.pts.push(b.dataset.pt);if(!st.edited)regen(st,false);refreshCard(st);save();status();return;}
+  var act=b.dataset.act;
+  if(act==="copy"){var ta=b.closest(".card").querySelector(".appr");copyText(ta.value,ta);}
+  else if(act==="ai"){aiWrite([st]);}
+  else if(act==="albert"){aiWrite([st],"albert");}
+  else if(act==="regen"){regen(st,true);refreshCard(st);save();status();}
+  else if(act==="del"){
+    if(b.dataset.armed){var c=cls();c.students=c.students.filter(function(s){return s!==st;});save();renderList();}
+    else{b.dataset.armed="1";b.textContent="Retirer ?";setTimeout(function(){if(b.isConnected){delete b.dataset.armed;b.textContent="✕";}},2500);}
+  }
+});
+list.addEventListener("input",function(e){
+  var t=e.target, st=stOf(t); if(!st||!t.dataset.f) return; var f=t.dataset.f;
+  if(f==="detail"){st.detail=t.value;save();return;}
+  if(f==="txt"){st.txt=t.value;st.edited=true;st.ai=false;var card=t.closest(".card"),cnt=card.querySelector(".count"),max=+cls().max||0;
+    cnt.textContent=t.value.length+(max?" / "+max:"")+" car.";cnt.classList.toggle("over",max&&t.value.length>max);
+    if(!card.querySelector(".pill")){var p=document.createElement("span");p.className="pill";p.textContent="Modifiée à la main";card.querySelector(".tone-tag").after(p);}
+    save();status();return;}
+  if(f==="name"){st.name=t.value;var sp=splitName(t.value);st.prenom=sp.prenom;if(st.gGuess)st.g=guessG(sp.prenom);save();return;}
+  if(f==="moy"){st.moy=t.value;clearTimeout(moyT[st.id]);moyT[st.id]=setTimeout(function(){if(!st.edited)regen(st,false);refreshCard(st,true);save();status();},450);return;}
+});
+list.addEventListener("change",function(e){
+  var t=e.target, st=stOf(t); if(!st||!t.dataset.f) return; var f=t.dataset.f;
+  if(f==="w"||f==="c"||f==="ton"){st[f]=f==="ton"?t.value:+t.value;}
+  else if(f==="abs"){st.abs=t.checked;}
+  else if(f==="detail"){}
+  else if(f==="name"){if(cls().useName&&!st.edited){regen(st,false);refreshCard(st);}save();return;}
+  else return;
+  if(!st.edited) regen(st,false); refreshCard(st,true); save(); status();
+});
+
+/* ---------- réglages de la classe ---------- */
+function onSetting(k,v){var c=cls();c[k]=v;
+  c.students.forEach(function(st){if(!st.edited)regen(st,false);});
+  renderList();save();}
+$("niv").addEventListener("change",function(){onSetting("niv",this.value);});
+$("mat").addEventListener("change",function(){onSetting("mat",this.value);});
+$("max").addEventListener("change",function(){onSetting("max",this.value);});
+$("useName").addEventListener("change",function(){onSetting("useName",this.checked);});
+["per","len"].forEach(function(id){$(id).addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  this.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",String(x===b));});onSetting(id,b.dataset.v);});});
+$("cls").addEventListener("change",function(){DB.cur=this.value;renderSettings();renderList();save();});
+function startRename(){
+  var box=$("clsActions"), c=cls(); var old=box.innerHTML;
+  box.innerHTML='<input type="text" id="clsName" value="'+esc(c.name)+'" aria-label="Nom de la classe"><button class="primary" type="button" id="clsOk">OK</button>';
+  var inp=$("clsName");inp.focus();inp.select();
+  function done(){c.name=inp.value.trim()||c.name;box.innerHTML=old;bindClsActions();renderSettings();save();}
+  $("clsOk").addEventListener("click",done);inp.addEventListener("keydown",function(e){if(e.key==="Enter")done();});
+}
+function bindClsActions(){
+  $("clsNew").addEventListener("click",newClass);
+  $("clsRename").addEventListener("click",startRename);
+  var del=$("clsDel");del.addEventListener("click",function(){
+    if(!del.dataset.armed){del.dataset.armed="1";del.textContent="Confirmer la suppression";setTimeout(function(){if(del.isConnected){delete del.dataset.armed;del.textContent="Supprimer";}},3000);return;}
+    DB.classes=DB.classes.filter(function(k){return k.id!==DB.cur;});
+    if(!DB.classes.length) DB.classes.push({id:uid(),name:"Ma classe",niv:"1",mat:"ms",per:"T1",len:"190",max:"250",useName:false,students:[]});
+    DB.cur=DB.classes[0].id;renderSettings();renderList();save();});
+}
+bindClsActions();
+function newClass(){var c=cls(), n={id:uid(),name:"Nouvelle classe "+(DB.classes.length+1),niv:c.niv,mat:c.mat,per:c.per,len:c.len,max:c.max,useName:c.useName,students:[]};
+  DB.classes.push(n);DB.cur=n.id;renderSettings();renderList();save();$("importBox").open=true;startRename();}
+
+$("genAll").addEventListener("click",function(){var sk=genAll(false);renderList();save();toast(sk?"Classe générée ("+sk+" texte"+(sk>1?"s":"")+" modifié"+(sk>1?"s":"")+" conservé"+(sk>1?"s":"")+")":"Classe générée");});
+$("copyAll").addEventListener("click",function(){
+  var t=cls().students.map(function(s){return s.name+"\t"+s.txt;}).join("\n");
+  copyText(t,null);
+});
+$("add").addEventListener("click",function(){var st=newStudent({});regen(st,false);cls().students.push(st);save();renderList();
+  var el=$("n-"+st.id);if(el){el.focus();el.select();el.scrollIntoView({block:"center"});}});
+
+
+/* ---------- rédaction par Claude (avec le compte Claude de la personne qui ouvre la page) ---------- */
+var SAMPLE=null, aiBusy=false;
+(function(){ if(window.claude&&window.claude.use){ window.claude.use("sample").then(function(f){SAMPLE=f; if(f) document.body.classList.add("has-ai");}).catch(function(){}); } })();
+var NIVL={"2":"Seconde bac pro","1":"Première bac pro","0":"Terminale bac pro"};
+var MATL={ms:"mathématiques et sciences physiques",m:"mathématiques",s:"physique-chimie"};
+var PERL={T1:"1er trimestre",T2:"2e trimestre",T3:"3e trimestre (bilan de fin d'année)",S1:"1er semestre",S2:"2e semestre (bilan de fin d'année)"};
+var EVL={"-1":"en baisse par rapport à la période précédente","0":"stable","1":"en progrès par rapport à la période précédente"};
+function mask(t,st){
+  t=String(t||"");
+  [st.prenom].concat((st.name||"").replace(/^Exemple\s*—\s*/,"").split(/\s+/)).forEach(function(w){
+    w=(w||"").trim(); if(w.length>1) t=t.split(w).join("[Prénom]");});
+  return t;
+}
+function profile(st,i){
+  var set=settings(), tone=toneOf(st), ph=phaseOf(set.per);
+  var o={n:i+1,genre:st.g==="f"?"fille (accords au féminin)":"garçon",moyenne:String(st.moy||"").trim()||"non renseignée",
+    travail:WL[st.w],attitude_en_classe:CL[st.c],ton_souhaite:TONES[tone]};
+  if(ph>1) o.evolution=EVL[String(st.evo)];
+  if(st.abs) o.absences="nombreuses absences";
+  if((st.appui||[]).length) o.points_d_appui=st.appui.map(function(k){return APMAP[k][1];});
+  if(st.pts.length) o.a_travailler=st.pts.map(function(k){return PTMAP[k][1];});
+  if((st.detail||"").trim()) o.detail_observe=mask(st.detail,st);
+  return o;
+}
+function buildPrompt(group){
+  var set=settings(), max=+set.max||300, len=Math.min(+set.len,max-10);
+  return [
+"Tu es professeur de "+MATL[set.mat]+" en lycée professionnel, classe de "+NIVL[set.niv]+". Rédige l'appréciation du bulletin ("+PERL[set.per]+") de chacun des élèves décrits ci-dessous, telle qu'un enseignant expérimenté l'écrirait dans PRONOTE.",
+"",
+"Règles :",
+"- Français naturel et sobre, à la 3e personne, comme un vrai professeur l'écrit. Pas de formules creuses ou toutes faites, pas de tutoiement ni de vouvoiement.",
+"- Style sobre de bulletin : 3 ou 4 phrases simples, sans emphase ni superlatifs (remarquable, brillant, exemplaire, enthousiasme…), sans dramatiser.",
+"- Environ "+len+" caractères, et jamais plus de "+max+" caractères espaces comprises.",
+"- Structure : un constat factuel, une nuance si nécessaire, puis un conseil ou un progrès attendu, concret et accessible.",
+"- Adapter au moment de l'année : 1er trimestre ou 1er semestre = début d'année, installation des habitudes de travail ; 2e trimestre = progression, ce qui a changé ; dernière période = bilan de l'année et perspective (passage dans la classe suivante, ou examen pour la Terminale).",
+"- Respecter le ton demandé pour chaque élève (Élogieux, Encourageant, Bienveillant, Ferme ou Alerte), en restant respectueux même quand le ton est ferme.",
+"- Ne jamais parler de félicitations, compliments ou encouragements (ce sont des mentions décidées par le conseil de classe), ni de la note chiffrée, ni comparer avec les autres élèves. Pas d'étiquette sur la personne (paresseux, faible…) : parler du travail et de l'attitude.",
+"- Utiliser les points d'appui, les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
+set.useName?"- Tu peux citer l'élève une seule fois en écrivant exactement [Prénom] ; sinon utilise il ou elle.":"- Ne jamais nommer l'élève : utilise il ou elle, ou une tournure impersonnelle.",
+"- Varier les tournures et les débuts de phrase d'un élève à l'autre.",
+"",
+"Élèves (JSON) :",
+JSON.stringify(group.map(profile)),
+"",
+"Réponds uniquement avec un tableau JSON, un objet par élève dans le même ordre : [{\"n\": 1, \"texte\": \"...\"}, ...]"
+  ].join("\n");
+}
+function aiError(e){
+  var c=e&&e.code;
+  if(c==="not_granted"||c==="sampling_disabled"||c==="not_declared"||c==="capability_disabled"||c==="capability_removed"){document.body.classList.remove("has-ai");SAMPLE=null;toast("Claude n'est pas autorisé ici : la version automatique reste disponible");}
+  else if(c==="rate_limited") toast("Limite d'utilisation de Claude atteinte, réessayez plus tard");
+  else if(c==="session_expired") toast("Reconnectez-vous à Claude puis réessayez");
+  else if(c!=="cancelled") toast("Claude n'a pas pu répondre, réessayez");
+}
+function aiWrite(students,prov){
+  prov=prov||"claude";
+  if(aiBusy||!students.length) return;
+  if(prov==="claude"&&!SAMPLE) return;
+  if(prov==="albert"&&!albReady()){toast("Renseignez d'abord la clé et le modèle Albert");$("albertBox").open=true;return;}
+  var who=prov==="albert"?"Albert":"Claude";
+  aiBusy=true; var all=$(prov==="albert"?"albAll":"aiAll"); all.disabled=true;
+  var groups=[]; for(var i=0;i<students.length;i+=10) groups.push(students.slice(i,i+10));
+  var done=0, total=students.length, ok=0;
+  function next(){
+    if(!groups.length){aiBusy=false;all.disabled=false;status();if(ok)toast(ok>1?ok+" appréciations rédigées par "+who:"Appréciation rédigée par "+who);return;}
+    var g=groups.shift();
+    g.forEach(function(st){st._busy=true;refreshCard(st);});
+    status(who+" rédige… "+done+" / "+total);
+    (prov==="albert"?albCall(buildPrompt(g)):SAMPLE.json(buildPrompt(g),{cache:false})).then(function(res){
+      var arr=Array.isArray(res)?res:(res&&Array.isArray(res.eleves)?res.eleves:[]);
+      g.forEach(function(st,k){
+        var it=arr.find(function(x){return x&&+x.n===k+1;})||arr[k];
+        var t=it&&typeof it.texte==="string"?it.texte.trim():"";
+        if(t){
+          var pre=(st.prenom||"").trim();
+          t=t.replace(/\[Prénom\]/g,pre||(st.g==="f"?"elle":"il"));
+          st.txt=t;st.ai=prov;st.edited=true;st.ids=[];ok++;
+        }
+      });
+    }).catch(function(e){ if(e&&e.msg) toast(e.msg); else aiError(e); groups=[];}).then(function(){
+      g.forEach(function(st){st._busy=false;refreshCard(st);});
+      done+=g.length; save(); next();
+    });
+  }
+  next();
+}
+$("aiAll").addEventListener("click",function(){aiWrite(cls().students.slice());});
+$("albAll").addEventListener("click",function(){aiWrite(cls().students.slice(),"albert");});
+
+/* ---------- rédaction par Albert (API Etalab, via le relais Cloudflare) ---------- */
+var ALB_KEY="albert-config-v1", IN_ARTIFACT=!!(window.claude&&window.claude.use);
+var ALB={proxy:"https://albert-proxy.cottindylan.workers.dev",key:"",model:"",remember:true,models:[]};
+try{var raw=localStorage.getItem(ALB_KEY); if(raw){var o=JSON.parse(raw); for(var k in o) ALB[k]=o[k];}}catch(e){}
+function albSave(){try{var o={proxy:ALB.proxy,model:ALB.model,remember:ALB.remember,models:ALB.models}; if(ALB.remember) o.key=ALB.key; localStorage.setItem(ALB_KEY,JSON.stringify(o));}catch(e){}}
+function albReady(){return !IN_ARTIFACT&&ALB.proxy&&ALB.key&&ALB.model;}
+function albRefresh(){
+  document.body.classList.toggle("has-albert",!!albReady());
+  var st=$("albState"); if(!st) return;
+  st.textContent=IN_ARTIFACT?"":(albReady()?"Prêt : "+ALB.model:"Renseignez la clé puis choisissez un modèle.");
+}
+function albUrl(path){return ALB.proxy.replace(/\/+$/,"")+path;}
+function albFail(res){
+  if(res.status===401||res.status===403) return "Clé API refusée par Albert (ou relais non autorisé)";
+  if(res.status===429) return "Limite d'utilisation d'Albert atteinte, réessayez dans un moment";
+  if(res.status===404) return "Modèle ou adresse introuvable";
+  return "Albert a répondu une erreur ("+res.status+")";
+}
+function albModels(){
+  var btn=$("albLoad"); btn.disabled=true; $("albState").textContent="Chargement des modèles…";
+  fetch(albUrl("/v1/models"),{headers:{"Authorization":"Bearer "+ALB.key}}).then(function(res){
+    if(!res.ok) throw {msg:albFail(res)}; return res.json();
+  }).then(function(j){
+    var list=(j&&j.data||[]).filter(function(m){return !m.type||(/generation|chat|image-text-to-text/i.test(m.type)&&!/embed|classif|speech|rerank/i.test(m.type));}).map(function(m){return m.id;});
+    if(!list.length) throw {msg:"Aucun modèle de texte disponible avec cette clé"};
+    ALB.models=list; if(list.indexOf(ALB.model)<0) ALB.model=list[0];
+    albFillModels(); albSave(); albRefresh(); toast(list.length+" modèle"+(list.length>1?"s":"")+" disponible"+(list.length>1?"s":""));
+  }).catch(function(e){ $("albState").textContent=(e&&e.msg)||"Impossible de joindre le relais Albert : vérifiez son adresse"; })
+  .then(function(){btn.disabled=false;});
+}
+function albFillModels(){
+  var sel=$("albModel"); var list=ALB.models.length?ALB.models:(ALB.model?[ALB.model]:[]);
+  sel.innerHTML=list.length?list.map(function(m){return '<option'+(m===ALB.model?" selected":"")+'>'+esc(m)+"</option>";}).join(""):'<option value="">Chargez la liste</option>';
+}
+function parseJsonArray(t){
+  t=String(t||"").replace(/^```(?:json)?\s*/i,"").replace(/```\s*$/,"");
+  try{var v=JSON.parse(t); return v;}catch(e){}
+  var a=t.indexOf("["), b=t.lastIndexOf("]"); if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(e){}}
+  throw {msg:"La réponse d'Albert n'a pas pu être lue, réessayez"};
+}
+function albCall(prompt){
+  return fetch(albUrl("/v1/chat/completions"),{method:"POST",headers:{"Authorization":"Bearer "+ALB.key,"Content-Type":"application/json"},
+    body:JSON.stringify({model:ALB.model,temperature:0.7,messages:[{role:"user",content:prompt}]})})
+  .then(function(res){ if(!res.ok) throw {msg:albFail(res)}; return res.json(); },function(){ throw {msg:"Impossible de joindre le relais Albert : vérifiez son adresse"}; })
+  .then(function(j){ var c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content; return parseJsonArray(c); });
+}
+(function(){
+  var box=$("albertBox"); if(!box) return;
+  if(IN_ARTIFACT){ $("albForm").hidden=true; $("albArtifact").hidden=false; return; }
+  $("albProxy").value=ALB.proxy; $("albKeyIn").value=ALB.key; $("albRemember").checked=!!ALB.remember; albFillModels();
+  $("albProxy").addEventListener("change",function(){ALB.proxy=this.value.trim();albSave();albRefresh();});
+  $("albKeyIn").addEventListener("change",function(){ALB.key=this.value.trim();albSave();albRefresh(); if(ALB.key&&!ALB.models.length) albModels();});
+  $("albRemember").addEventListener("change",function(){ALB.remember=this.checked;albSave();});
+  $("albModel").addEventListener("change",function(){ALB.model=this.value;albSave();albRefresh();});
+  $("albLoad").addEventListener("click",function(){ if(!ALB.key){toast("Collez d'abord votre clé API");return;} albModels(); });
+  albRefresh();
+})();
+/* ---------- import ---------- */
+function isNum(s){var m=String(s).trim().replace(",",".");return /^\d{1,2}(\.\d+)?$/.test(m)&&+m<=20;}
+function parseList(text){
+  var lines=text.split(/\r?\n/).map(function(l){return l.replace(/\s+$/,"");}).filter(function(l){return l.trim();});
+  if(!lines.length) return [];
+  var sep=lines.some(function(l){return l.indexOf("\t")>=0;})?"\t":(lines.some(function(l){return l.indexOf(";")>=0;})?";":null);
+  if(!sep&&lines.some(function(l){return /,/.test(l)&&!/\d,\d/.test(l);})) sep=",";
+  var hdr=null,out=[];
+  lines.forEach(function(l){
+    var cells;
+    if(sep) cells=l.split(sep).map(function(c){return c.trim().replace(/^"|"$/g,"").trim();});
+    else{var m=l.match(/^(.*?)\s+(\d{1,2}(?:[.,]\d+)?)\s*$/);cells=m?[m[1],m[2]]:[l.trim()];}
+    if(!hdr&&!out.length&&!cells.some(isNum)&&cells.some(function(c){return /nom|[ée]l[èe]ve|pr[ée]nom/i.test(c);})){
+      hdr={};cells.forEach(function(c,i){
+        if(/pr[ée]nom/i.test(c)) hdr.pre=i; else if(/^nom|[ée]l[èe]ve/i.test(c)&&hdr.nom==null) hdr.nom=i;
+        else if(/moy/i.test(c)&&hdr.moy==null) hdr.moy=i; else if(/sexe|genre/i.test(c)) hdr.sexe=i;});
+      return;
+    }
+    var name,moy="",g=null;
+    if(hdr&&hdr.nom!=null){
+      name=(cells[hdr.nom]||"")+(hdr.pre!=null?" "+(cells[hdr.pre]||""):"");
+      if(hdr.moy!=null&&isNum(cells[hdr.moy]||"")) moy=cells[hdr.moy].replace(".",",");
+      else {var fn=cells.find(isNum); if(fn) moy=fn.replace(".",",");}
+      if(hdr.sexe!=null){var sx=(cells[hdr.sexe]||"").toUpperCase();if(/^F/.test(sx))g="f";else if(/^[GM]/.test(sx))g="m";}
+    } else {
+      var names=[],num=null;
+      cells.forEach(function(c){if(!c)return;if(isNum(c)){if(num==null)num=c;}else if(!/^(abs|disp|n\.?\s?not|ab|nr|\*)$/i.test(c)&&!/^[FG]$/i.test(c))names.push(c);else if(/^F$/i.test(c))g="f";else if(/^G$/i.test(c))g="m";});
+      name=names.join(" ");if(num!=null)moy=num.replace(".",",");
+    }
+    name=name.trim();
+    if(!name||/moyenne|^classe|^total/i.test(name)) return;
+    var o={name:name,moy:moy}; if(g) o.g=g; out.push(o);
+  });
+  return out;
+}
+$("importFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader();
+  rd.onload=function(){var t=String(rd.result);if(t.indexOf("\uFFFD")>=0){var r2=new FileReader();r2.onload=function(){$("importTxt").value=String(r2.result);};r2.readAsText(f,"windows-1252");}else $("importTxt").value=t;};
+  rd.readAsText(f,"utf-8");
+});
+$("importGo").addEventListener("click",function(){
+  var rows=parseList($("importTxt").value);
+  if(!rows.length){toast("Aucun élève reconnu : une ligne par élève, nom puis moyenne");return;}
+  var c=cls(); if($("importReplace").checked) c.students=[];
+  rows.forEach(function(r){c.students.push(newStudent(r));});
+  genAll(false); $("importTxt").value=""; $("importBox").open=false; save(); renderList();
+  toast(rows.length+" élève"+(rows.length>1?"s":"")+" importé"+(rows.length>1?"s":""));
+});
+
+/* ---------- démarrage ---------- */
+load();
+DB.classes.forEach(function(c){var u={};c.students.forEach(function(st){if(!st.txt){var save=DB.cur;DB.cur=c.id;regen(st,false);DB.cur=save;}});});
+renderSettings();renderList();save();
+})();
+</script>
+
+</body></html>
