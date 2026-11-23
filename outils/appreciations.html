@@ -540,7 +540,7 @@ close: {
 /* ouvertures en groupe nominal, pour les phrases liées : « Un bon trimestre, porté par un travail sérieux. »
    genre : m, f, p (pluriel masculin) */
 openNP: {
- 1:[["Un début d'année très difficile|m","Un premier {per} très insuffisant|m"],["Un début d'année difficile|m","Un premier {per} fragile|m"],["Un début d'année correct|m","Un premier {per} honnête|m"],["Un bon début d'année|m","Un premier {per} satisfaisant|m"],["Un très bon début d'année|m","Un très bon premier {per}|m"],["Un excellent début d'année|m","Un premier {per} remarquable|m"]],
+ 1:[["Un début d'année très difficile|m","Un premier {per} très insuffisant|m"],["Un début d'année difficile|m","Un premier {per} fragile|m"],["Un début d'année correct|m","Un premier {per} honnête|m"],["Un bon début d'année|m","Un premier {per} satisfaisant|m"],["Un très bon début d'année|m","Un très bon premier {per}|m"],["Un excellent début d'année|m","Un très bon premier {per}|m"]],
  2:[["Un {per} très difficile|m","Des résultats très insuffisants|p"],["Un {per} difficile|m","Des résultats fragiles|p"],["Un {per} correct|m","Des résultats moyens|p"],["Un bon {per}|m","Des résultats satisfaisants|p"],["Un très bon {per}|m","De très bons résultats|p"],["Un excellent {per}|m","D'excellents résultats|p"]],
  3:[["Une année très difficile|f","Un bilan très insuffisant|m"],["Une année difficile|f","Un bilan fragile|m"],["Une année correcte|f","Un bilan moyen|m"],["Une bonne année|f","Un bilan satisfaisant|m"],["Une très bonne année|f","Un très bon bilan|m"],["Une excellente année|f","Un excellent bilan|m"]]
 }
@@ -580,39 +580,59 @@ var SOBER_ADD = {
 })();
 
 
+/* points à travailler : [clé, libellé, conseil, matières où le proposer (vide = toutes)] */
+var SCI="m s ms svt techno pro ateliers coint", LABO="s ms svt techno pro ateliers coint cdo";
 var POINTS = [
  ["lecons","Leçons","apprendre ses leçons plus régulièrement"],
  ["maison","Travail à la maison","faire le travail demandé à la maison"],
  ["entrain","S'entraîner","s'entraîner davantage sur les exercices"],
  ["evals","Évaluations","préparer plus sérieusement les évaluations"],
+ ["bases","Bases, lacunes","combler ses lacunes sur les notions de base"],
+ ["consigne","Lecture des énoncés","lire attentivement les énoncés avant de se lancer"],
  ["redac","Rédaction","soigner la rédaction en justifiant ses réponses"],
- ["calcul","Calcul","consolider ses automatismes de calcul"],
  ["methode","Méthodes","appliquer avec plus de rigueur les méthodes vues en cours"],
  ["soin","Inattention","relire ses réponses pour éviter les erreurs d'inattention"],
- ["unites","Unités, schémas","être plus rigoureu[x|se] sur les unités et les schémas"],
- ["tp","TP","s'impliquer davantage lors des travaux pratiques"],
+ ["orga","Organisation","mieux organiser son travail personnel"],
+ ["cahier","Tenue du cahier","tenir son cahier avec plus de soin"],
+ ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise"],
+ ["approf","Approfondir","approfondir ses connaissances pour viser plus haut"],
+ ["calcul","Calcul","consolider ses automatismes de calcul",SCI],
+ ["unites","Unités, schémas","être plus rigoureu[x|se] sur les unités et les schémas",SCI],
+ ["tp","TP","s'impliquer davantage lors des travaux pratiques",LABO],
  ["attention","Concentration","rester concentré[|e] tout au long des séances"],
  ["bavard","Bavardages","limiter les bavardages"],
  ["oral","Oral","oser prendre la parole plus souvent"],
- ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise"],
  ["autonomie","Autonomie","gagner en autonomie face aux exercices"],
  ["materiel","Matériel","apporter son matériel à chaque séance"],
  ["ponct","Ponctualité","arriver à l'heure en cours"],
  ["implic","Implication","s'impliquer davantage dans les activités proposées"]
 ];
+/* points d'appui : [clé, libellé, groupe nominal, matières] ; « potentiel » a ses propres phrases */
 var APPUIS = [
- ["oral","Participation orale","sa participation à l'oral"],
+ ["potentiel","Potentiel, capacités",""],
  ["regul","Régularité","sa régularité dans le travail"],
- ["auto","Autonomie","son autonomie"],
- ["soin","Soin","le soin apporté à ses travaux"],
+ ["serieux","Sérieux","son sérieux"],
  ["perse","Persévérance","sa persévérance"],
+ ["efforts","Efforts visibles","les efforts fournis"],
+ ["comprend","Compréhension rapide","sa rapidité de compréhension"],
  ["methode","Méthode","sa méthode de travail"],
+ ["rigueur","Rigueur","sa rigueur"],
+ ["soin","Soin","le soin apporté à ses travaux"],
+ ["redac","Qualité de rédaction","la qualité de sa rédaction"],
  ["curio","Curiosité","sa curiosité"],
- ["tp","Implication en TP","son implication en TP"],
- ["calcul","Aisance en calcul","son aisance en calcul"],
+ ["calcul","Aisance en calcul","son aisance en calcul",SCI],
  ["raison","Raisonnement","la qualité de son raisonnement"],
+ ["tp","Implication en TP","son implication en TP",LABO],
+ ["oral","Participation orale","sa participation à l'oral"],
+ ["auto","Autonomie","son autonomie"],
  ["entraide","Entraide","son esprit d'entraide"]
 ];
+/* potentiel : phrase choisie selon le travail et les résultats */
+var POT={lazy:["{Il} a des capacités, mais elles restent sous-exploitées faute d'un travail suffisant.","Les capacités sont réelles : il faut maintenant les mettre au service d'un travail plus sérieux.","{Il} a du potentiel, à condition de s'investir davantage."],
+  weak:["{Il} a les capacités pour réussir : les efforts finiront par payer.","Le potentiel est là, il faut persévérer.","{Il} a les moyens de progresser, à condition de garder ce sérieux."],
+  mid:["{Il} a les capacités pour obtenir de meilleurs résultats.","Le potentiel est réel et peut être davantage exploité.","{Il} a du potentiel, et peut viser plus haut."],
+  good:["{Il} a de réelles capacités, qu'il faut continuer à exploiter.","Le potentiel est réel : {il} peut encore viser plus haut.","{Il} a les capacités pour aller encore plus loin."]};
+function forMat(p,mat){return !p[3]||(" "+p[3]+" ").indexOf(" "+mat+" ")>=0;}
 /* savoir-être : [clé, libellé, point fort (groupe nominal), à améliorer (ton doux), à améliorer (ton ferme), conseil (verbe)] */
 var SE = [
  ["particip","Participation","sa participation en classe",["Attention toutefois à participer davantage.","Il faudra participer davantage à l'oral."],["La participation en classe doit nettement progresser."],"participer davantage à l'oral"],
@@ -745,12 +765,18 @@ function candidate(st,set,A,r){
   // évite la redite entre la phrase de comportement et les points
   if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
   // 3 bis. points d'appui et détail observé
-  var ap=(st.appui||[]).filter(function(k){return APMAP[k];}).map(function(k){return APMAP[k][2];});
+  var pot=(st.appui||[]).indexOf("potentiel")>=0;
+  var ap=(st.appui||[]).filter(function(k){return APMAP[k]&&k!=="potentiel";}).map(function(k){return APMAP[k][2];});
   seP.forEach(function(k){ap.push(SEMAP[k][2]);});
-  if(ap.length&&(seP.length||r()<.9)){
+  if(pot){
+    var said=out.some(function(x){return /capacit|potentiel|facilit|moyens/i.test(x[1]);});
+    var pk=W<=2?"lazy":(N<=1?"weak":(N<=2?"mid":"good")); if(!said) out.push(pick(POT[pk],"pot"+pk));
+    if(ap.length>1) ap=ap.slice().sort(function(){return r()-.5;}).slice(0,1);
+  }
+  if(ap.length&&(seP.length||pot||r()<.9)){
     ap=ap.slice().sort(function(){return r()-.5;}).slice(0,2);
     var np=ap.join(" et "), forms;
-    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui."]
+    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout."]
                        :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+"."];
     var fi=Math.floor(r()*forms.length); out.push(["ap:"+fi,forms[fi]]);
   }
@@ -765,6 +791,9 @@ function candidate(st,set,A,r){
     if(C===1&&!showC) auto.push("bavard"); if(C===2&&!showC) auto.push("oral");
     if(N<=2&&W>=3) auto.push("entrain","questions","methode");
     if(N===3&&W>=3) auto.push("redac","soin");
+    if(N>=4&&W>=3) auto.push("approf");
+    if(N<=1) auto.push("bases");
+    auto=auto.filter(function(k){return forMat(PTMAP[k]||[],set.mat);});
     var PRAT={eps:1,ap:1,mus:1,ateliers:1,pro:1,cdo:1,aac:1,techno:1};
     if(PRAT[set.mat]) auto=auto.map(function(k){return {lecons:"implic",maison:"implic",evals:"implic",entrain:"autonomie",redac:"attention",soin:"attention",methode:"questions",calcul:"autonomie"}[k]||k;});
     if(auto.length&&T!=="E"&&r()<.75) pts=[auto[Math.floor(r()*auto.length)]];
@@ -918,9 +947,9 @@ function cardHTML(st){
   var set=settings(), tone=toneOf(st), ph=analyse(st,set).phase, max=+set.max||0, n=st.txt.length;
   var tsel='<option value="auto"'+(st.ton==="auto"?" selected":"")+'>Auto ('+TONES[tone].toLowerCase()+')</option>'+
     Object.keys(TONES).map(function(k){return '<option value="'+k+'"'+(st.ton===k?" selected":"")+">"+TONES[k]+"</option>";}).join("");
-  var chips=POINTS.filter(function(p){return !SE_FROM_PTS[p[0]]||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var chips=POINTS.filter(function(p){return (!SE_FROM_PTS[p[0]]&&forMat(p,set.mat))||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var appui=st.appui||[];
-  var apchips=APPUIS.filter(function(p){return !SE_FROM_AP[p[0]]||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var apchips=APPUIS.filter(function(p){return (!SE_FROM_AP[p[0]]&&forMat(p,set.mat))||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var apch=appui.map(function(k){return APMAP[k][1];}).join(", ");
   var chosen=st.pts.map(function(k){return PTMAP[k][1];}).join(", ");
   var se=st.se||{}, seSum=SE.filter(function(p){return se[p[0]];}).map(function(p){return (se[p[0]]>0?"+ ":"− ")+p[1];}).join(", ");
@@ -1110,6 +1139,7 @@ function buildPrompt(group){
 "- Adapter au moment de l'année : 1er trimestre ou 1er semestre = début d'année, installation des habitudes de travail ; 2e trimestre = progression, ce qui a changé ; dernière période = bilan de l'année et perspective (passage dans la classe suivante, ou examen pour la Troisième, le CAP 2e année et la Terminale).",
 "- Respecter le ton demandé pour chaque élève (Élogieux, Encourageant, Bienveillant, Ferme ou Alerte), en restant respectueux même quand le ton est ferme.",
 "- Ne jamais parler de félicitations, compliments ou encouragements (ce sont des mentions décidées par le conseil de classe), ni de la note chiffrée, ni comparer avec les autres élèves. Pas d'étiquette sur la personne (paresseux, faible…) : parler du travail et de l'attitude.",
+"- Si « Potentiel, capacités » figure dans les points d'appui, dire sobrement que l'élève a des capacités, en le reliant au travail fourni (capacités sous-exploitées si le travail est insuffisant).",
 "- Utiliser les points d'appui, le savoir-être (points forts et à améliorer), les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
 set.useName?"- Tu peux citer l'élève une seule fois en écrivant exactement [Prénom] ; sinon utilise il ou elle.":"- Ne jamais nommer l'élève : utilise il ou elle, ou une tournure impersonnelle.",
 "- Varier les tournures et les débuts de phrase d'un élève à l'autre.",
