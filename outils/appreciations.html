@@ -917,14 +917,14 @@ function aiWrite(students,prov){
   if(prov==="albert"&&!albReady()){toast("Renseignez d'abord la clé et le modèle Albert");$("albertBox").open=true;return;}
   var who=prov==="albert"?"Albert":"Claude";
   aiBusy=true; var all=$(prov==="albert"?"albAll":"aiAll"); all.disabled=true;
-  var groups=[]; for(var i=0;i<students.length;i+=10) groups.push(students.slice(i,i+10));
+  var gs=prov==="albert"?1:10, groups=[]; for(var i=0;i<students.length;i+=gs) groups.push(students.slice(i,i+gs));
   var done=0, total=students.length, ok=0;
   function next(){
     if(!groups.length){aiBusy=false;all.disabled=false;status();if(ok)toast(ok>1?ok+" appréciations rédigées par "+who:"Appréciation rédigée par "+who);return;}
     var g=groups.shift();
     g.forEach(function(st){st._busy=true;refreshCard(st);});
     status(who+" rédige… "+done+" / "+total);
-    (prov==="albert"?albCall(buildPrompt(g)):SAMPLE.json(buildPrompt(g),{cache:false})).then(function(res){
+    (prov==="albert"?albOne(g[0]):SAMPLE.json(buildPrompt(g),{cache:false})).then(function(res){
       var arr=Array.isArray(res)?res:(res&&Array.isArray(res.eleves)?res.eleves:[]);
       g.forEach(function(st,k){
         var it=arr.find(function(x){return x&&+x.n===k+1;})||arr[k];
@@ -984,6 +984,36 @@ function parseJsonArray(t){
   try{var v=JSON.parse(t); return v;}catch(e){}
   var a=t.indexOf("["), b=t.lastIndexOf("]"); if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(e){}}
   throw {msg:"La réponse d'Albert n'a pas pu être lue, réessayez"};
+}
+function albOne(st){
+  var set=settings(), max=+set.max||250, len=Math.min(+set.len,max-10), f=st.g==="f";
+  var dset={niv:set.niv,mat:set.mat,per:set.per,len:set.len,max:set.max,useName:false};
+  var draft=generate(st,dset,usageExcept(st),(Math.random()*1e9)|0).text;
+  var pr=profile(st,0); delete pr.n;
+  var info=Object.keys(pr).map(function(k){var v=pr[k];return "- "+k.replace(/_/g," ")+" : "+(Array.isArray(v)?v.join(", "):v);}).join("\n");
+  var sys="Tu aides un professeur de "+MATL[set.mat]+" de lycée professionnel ("+NIVL[set.niv]+") à écrire l'appréciation d'un bulletin scolaire ("+PERL[set.per]+"). "+
+    "Tu écris en français simple et naturel, comme un professeur l'écrit vraiment : phrases courtes, vocabulaire courant, à la troisième personne ("+(f?"elle":"il")+"). "+
+    "Jamais de superlatifs, jamais de formules grandiloquentes, jamais de félicitations ni d'encouragements (ce sont des décisions du conseil de classe), jamais la note chiffrée, jamais le prénom. "+
+    "Pas de titre, pas de liste, pas de guillemets, pas de commentaire : tu réponds uniquement par le texte de l'appréciation, en un seul paragraphe.";
+  var ex="Exemples du style attendu :\n"+
+    "Un trimestre correct, avec un travail encore irrégulier. Il se disperse trop souvent en classe. Il doit apprendre ses leçons plus régulièrement pour progresser.\n"+
+    "Bon début d'année. Elle travaille avec sérieux et participe volontiers. Elle doit encore soigner la rédaction de ses réponses.\n"+
+    "Les résultats restent fragiles malgré des efforts réels. Il doit oser poser des questions dès qu'une notion n'est pas comprise. Il faut persévérer.";
+  var user=ex+"\n\nInformations sur l'élève :\n"+info+
+    "\n\nBrouillon à améliorer :\n"+draft+
+    "\n\nRéécris ce brouillon pour qu'il sonne plus naturel, en gardant le même sens et le même ton ("+TONES[toneOf(st)].toLowerCase()+"). "+
+    (pr.detail_observe?"Intègre le détail observé. ":"")+
+    "3 ou 4 phrases, environ "+len+" caractères, jamais plus de "+max+" caractères.";
+  return fetch(albUrl("/v1/chat/completions"),{method:"POST",headers:{"Authorization":"Bearer "+ALB.key,"Content-Type":"application/json"},
+    body:JSON.stringify({model:ALB.model,temperature:0.3,max_tokens:300,messages:[{role:"system",content:sys},{role:"user",content:user}]})})
+  .then(function(res){ if(!res.ok) throw {msg:albFail(res)}; return res.json(); },function(){ throw {msg:"Impossible de joindre le relais Albert : vérifiez son adresse"}; })
+  .then(function(j){
+    var c=String(j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content||"");
+    c=c.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?(appréciation|texte)\s*(réécrit[e]?)?\s*:\s*/i,function(m){return m.length<60?"":m;})
+       .replace(/[*_#`«»"]/g,"").replace(/\s*\n+\s*/g," ").replace(/\s{2,}/g," ").trim();
+    if(c.length<40||c.length>max+60) c=draft;
+    return [{n:1,texte:c}];
+  });
 }
 function albCall(prompt){
   return fetch(albUrl("/v1/chat/completions"),{method:"POST",headers:{"Authorization":"Bearer "+ALB.key,"Content-Type":"application/json"},
