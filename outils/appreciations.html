@@ -607,6 +607,7 @@ function generate(st,set,usage,seed){
     var text=finish(parts.map(function(p){return p[1];}).filter(Boolean).join(" "),st,set);
     var score=Math.abs(text.length-target);
     if(text.length>max) score+=1000+(text.length-max);
+    if(set.useName&&(st.prenom||"").trim()&&text.indexOf(st.prenom.trim())<0) score+=150;
     parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
     var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){if(seen[w])score+=9;seen[w]=1;});
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<3&&target>=180) score+=40;
@@ -638,7 +639,7 @@ function guessG(pre){
 function splitName(full){
   var t=full.trim().split(/\s+/), nom=[], pre=[];
   t.forEach(function(w){ (/[a-zà-ÿ]/.test(w)?pre:nom).push(w); });
-  if(!pre.length) return {prenom:"",nom:full.trim()};
+  if(!pre.length){ var clean=t.filter(function(w){return /[A-ZÀ-Ý]/.test(w);}); if(clean.length>1){var l=clean[clean.length-1].toLowerCase();return {prenom:l.charAt(0).toUpperCase()+l.slice(1),nom:clean.slice(0,-1).join(" ")};} return {prenom:"",nom:full.trim()}; }
   if(!nom.length) return {prenom:t[0],nom:t.slice(1).join(" ")};
   return {prenom:pre.join(" "),nom:nom.join(" ")};
 }
@@ -987,13 +988,15 @@ function parseJsonArray(t){
 }
 function albOne(st){
   var set=settings(), max=+set.max||250, len=Math.min(+set.len,max-10), f=st.g==="f";
-  var dset={niv:set.niv,mat:set.mat,per:set.per,len:set.len,max:set.max,useName:false};
-  var draft=generate(st,dset,usageExcept(st),(Math.random()*1e9)|0).text;
+  var named=!!(set.useName&&(st.prenom||"").trim());
+  var dset={niv:set.niv,mat:set.mat,per:set.per,len:set.len,max:set.max,useName:named};
+  var stx={}; for(var k in st) stx[k]=st[k]; stx.prenom="[Prénom]";
+  var draft=generate(stx,dset,usageExcept(st),(Math.random()*1e9)|0).text;
   var pr=profile(st,0); delete pr.n;
   var info=Object.keys(pr).map(function(k){var v=pr[k];return "- "+k.replace(/_/g," ")+" : "+(Array.isArray(v)?v.join(", "):v);}).join("\n");
   var sys="Tu aides un professeur de "+MATL[set.mat]+" de lycée professionnel ("+NIVL[set.niv]+") à écrire l'appréciation d'un bulletin scolaire ("+PERL[set.per]+"). "+
     "Tu écris en français simple et naturel, comme un professeur l'écrit vraiment : phrases courtes, vocabulaire courant, à la troisième personne ("+(f?"elle":"il")+"). "+
-    "Jamais de superlatifs, jamais de formules grandiloquentes, jamais de félicitations ni d'encouragements (ce sont des décisions du conseil de classe), jamais la note chiffrée, jamais le prénom. "+
+    "Jamais de superlatifs, jamais de formules grandiloquentes, jamais de félicitations ni d'encouragements (ce sont des décisions du conseil de classe), jamais la note chiffrée. "+(named?"L'élève est désigné une fois par le marqueur [Prénom], à garder tel quel ; ensuite "+(f?"elle":"il")+". ":"Jamais de prénom. ")+
     "Pas de titre, pas de liste, pas de guillemets, pas de commentaire : tu réponds uniquement par le texte de l'appréciation, en un seul paragraphe.";
   var ex="Exemples du style attendu :\n"+
     "Un trimestre correct, avec un travail encore irrégulier. Il se disperse trop souvent en classe. Il doit apprendre ses leçons plus régulièrement pour progresser.\n"+
@@ -1012,6 +1015,7 @@ function albOne(st){
     c=c.replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/^[\s\S]*?(appréciation|texte)\s*(réécrit[e]?)?\s*:\s*/i,function(m){return m.length<60?"":m;})
        .replace(/[*_#`«»"]/g,"").replace(/\s*\n+\s*/g," ").replace(/\s{2,}/g," ").trim();
     if(c.length<40||c.length>max+60) c=draft;
+    if(named&&c.indexOf("[Prénom]")<0) c=c.replace(/^(Il|Elle) /,"[Prénom] ");
     return [{n:1,texte:c}];
   });
 }
