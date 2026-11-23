@@ -749,7 +749,12 @@ function candidate(st,set,A,r){
     out.push(["onp"+P+N+":"+oi, parts[0]+lk[li].replace("{a}",ag).replace("{w}",wl[wi])]);
     out.push(["lk"+key+":"+li,""]); coversW=true;
   }
-  else out.push(pick(B.open[P][N],"o"+P+N));
+  else {
+    /* travail insuffisant ou ton ferme : pas d'ouverture positive (« encourageants », « prometteur »…) */
+    var ol=B.open[P][N];
+    if(W<=2||T==="F"||T==="A"){ var POSW=/encourag|prometteu|satisfais|positi|bonne voie|bon départ|rassurant/i, ol2=ol.filter(function(t){return !POSW.test(t);}); if(ol2.length) ol=ol2; }
+    out.push(pick(ol,"o"+P+N));
+  }
   // 2. évolution
   var e=+st.evo;
   if(P>1&&Math.abs(e)===2) out.push(pick(EVO2[e>0?"up":"down"],"ev2"+(e>0?"up":"down")));
@@ -861,7 +866,7 @@ function candidate(st,set,A,r){
     var cl = closeFor(P,T,set.niv);
     /* après une critique, pas de « continuer ainsi » : on garde une conclusion tournée vers le progrès */
     var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2;
-    if(crit){ var CONT=/continuer ainsi|poursuivre sur cette lancée|garder ce rythme|continuer sur cette voie|cette dynamique|même sérieux|très bon départ|il faut continuer|garder cette motivation/i;
+    if(crit){ var CONT=/continuer ainsi|poursuivre sur cette lancée|garder ce rythme|continuer sur cette voie|cette dynamique|même sérieux|très bon départ|il faut continuer|garder cette motivation|encourag/i;
       var cl2=cl.filter(function(t){return !CONT.test(t);});
       if(cl2.length) out.push(pick(cl2,"cl"+P+T)); }
     else out.push(pick(cl,"cl"+P+T));
