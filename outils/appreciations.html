@@ -568,7 +568,7 @@ var TOO_MUCH = ["L'attitude en classe manque de concentration.","Excellent premi
 "Un parcours très réussi jusqu'ici.","Une très belle dynamique, à entretenir.","Il faut garder cette belle énergie.","La dynamique est très positive.","Une très belle constance, à poursuivre.","Il faut conserver cette belle régularité.","La fin d'année s'annonce très bien.","La suite de l'année s'annonce bien.","Tout est réuni pour réussir l'examen.","Tout est réuni pour une belle année de terminale.","Une très belle année, de bon augure pour la terminale.","Une très belle entrée dans l'année, à poursuivre.","Courage, rien n'est figé.","Le potentiel est là, il faut s'en donner les moyens.","Le potentiel est là, il faut l'exploiter d'ici la fin de l'année.","Il faut maintenant tout miser sur les révisions.","Il faut aborder la terminale avec la même envie.","Il faut aborder l'examen avec la même détermination.","Il faut garder cet état d'esprit l'an prochain.","Il faut garder cet état d'esprit pour l'année de l'examen.","Il faut se mobiliser pleinement pour l'examen.","Une remise en question profonde s'impose pour l'année prochaine.","Un changement radical est indispensable.","Il faudra changer radicalement d'attitude en terminale.","La priorité absolue est de {vp}.","Il faut, sans attendre, {vp}.","Il faudra sans faute {vp}.","{Il} peut viser encore plus haut en prenant soin de {vp}.","Pour franchir un cap, {il} devra {vp}.","Pour gagner encore en aisance, {il} peut {vp}.","La prochaine étape sera de {vp}.","L'objectif est maintenant de {vp}.","Il faudra simplement {vp}.","J'attends que {il} prenne l'habitude de {vp}.",
 "{Il} est un élément moteur de la classe.","Sa participation dynamique enrichit le cours.","{Il} s'implique avec enthousiasme à l'oral.","{Il} s'implique pleinement dans la vie de la classe.","une implication remarquable à l'oral","une participation riche et pertinente","{Il} travaille avec autant de sérieux que de régularité.","L'investissement est exemplaire.","un investissement exemplaire","Le travail est d'une grande rigueur.","un travail d'une grande rigueur","{Il} s'investit pleinement, en classe comme à la maison.","Le refus de travailler est manifeste.@FA","un refus de s'investir","un manque total d'investissement","Les exercices ne sont ni commencés en classe ni faits à la maison.","Le comportement nuit à ses apprentissages comme à ceux des autres.","{Il} alterne des moments d'investissement et des périodes de relâchement.","un investissement en dents de scie","{Il} participe peu, alors que ses interventions sont souvent justes.","Les résultats tiennent encore, mais le travail fourni ne suffira pas longtemps.","Des facilités évidentes, mais un manque de travail qui finira par se payer.","Les résultats sont corrects, mais ils reposent sur des facilités plus que sur le travail.","Les capacités sont là, le travail beaucoup moins.","Des capacités évidentes, desservies par un travail irrégulier.","Des résultats corrects, obtenus sans véritable effort, c'est dommage.","Des résultats satisfaisants obtenus sans réel travail, c'est dommage.","Le sérieux est au rendez-vous, mais les résultats restent fragiles.","Les efforts commencent pourtant à se voir dans les résultats.","Les résultats peinent à décoller ce {per}.","Les débuts sont très difficiles, les notions de rentrée ne sont pas acquises.","Les absences répétées font perdre le fil du cours.","Les nombreuses absences rendent le suivi difficile.","L'assiduité doit être irréprochable, les absences pèsent sur les résultats.@FA","Il est encore temps de réagir, mais il faut le faire maintenant.","La fin d'année doit absolument marquer un changement.","L'année ne peut pas continuer ainsi.","L'année prochaine ne pourra pas se dérouler ainsi.","Un dernier {per} correct, dans une année moyenne.","Très bon dernier {per}, dans la lignée de l'année.","Bon dernier {per}, qui confirme une année sérieuse.","Bravo pour cette très belle année, et bonne continuation en première.","Bravo, et tous mes vœux de réussite pour l'examen et la suite du parcours.","Une très belle année, avec des résultats excellents.","Une très belle année, bonne continuation pour la suite.","Une très belle année, bonne réussite pour la suite.","Une très belle année, qui prépare bien la terminale.","Une très belle année, à prolonger en première.","Bravo, il faut maintenir ce niveau.","C'est un excellent départ, il faut continuer ainsi.","Bravo pour cette belle année, à confirmer en terminale.","Un très bon {per}, les acquis sont solides.","Une très bonne année, les acquis sont solides.","Très bon {per}, les acquis sont solides.","Un premier {per} très en dessous des attentes.","Les rappels à l'ordre sont beaucoup trop nombreux."];
 var SOBER_ADD = {
- close:{1:{E:["Il faut continuer ainsi."],C:["Il faut continuer ainsi."]},2:{E:["Il faut continuer ainsi."],C:["Il faut continuer ainsi."]},
+ close:{1:{E:["Il faut continuer ainsi.","Ce niveau est à maintenir.","Bonne continuation.","Il faut garder cette exigence."],C:["Il faut continuer ainsi.","C'est un bon départ, à confirmer."]},2:{E:["Il faut continuer ainsi.","Ce niveau est à maintenir.","Bonne continuation.","Il faut garder cette exigence."],C:["Il faut continuer ainsi.","La progression doit se poursuivre."]},
   3:{2:{E:["Bonne continuation en première."]},1:{E:["Bonne continuation en terminale."]},0:{E:["Bonne réussite pour l'examen."]}}}
 };
 (function(){
@@ -696,7 +696,7 @@ function txt(entry){var i=entry.indexOf("@");return i<0?entry:entry.slice(0,i);}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 /* liaison de deux phrases : « A. B. » → « A, mais b. » (évite l'enchaînement de phrases courtes) */
 function lcFirst(t){ if(/^\{Il\}/.test(t)) return "{il}"+t.slice(4); return /^[A-ZÀ-Ý][a-zà-ÿ' ]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t; }
-function joinable(a,b){ return a&&b&&/^(\{Il\} |L[ae] |L'|Les |Sa |Son |Ses |On |aux? |à )/.test(b)&&/\.$/.test(a)&&!/[:;]/.test(a)&&a.length+b.length<175&&!/\bmais\b/i.test(a+" "+b); }
+function joinable(a,b){ return a&&b&&/^(\{Il\} |L[ae] |L'|Les |Sa |Son |Ses |On |aux? |à )/.test(b)&&/\.$/.test(a)&&!/[:;]/.test(a)&&a.length+b.length<175&&!/\bmais\b/i.test(a+" "+b)&&!/, et /.test(a); }
 function lastFull(out){ for(var i=out.length-1;i>=0;i--) if(out[i][1]) return out[i]; return null; }
 /* tonalité de la dernière phrase : true positive, false négative, null inconnue */
 function lastPol(out,W,C){ var l=lastFull(out); if(!l) return null; var m=/^(ws|cs)(\d)/.exec(l[0]);
@@ -791,11 +791,15 @@ function candidate(st,set,A,r){
     var pk=W<=2?"lazy":(N<=1?"weak":(N<=2?"mid":"good")); if(!said) out.push(pick(POT[pk],"pot"+pk));
     if(ap.length>1) ap=ap.slice().sort(function(){return r()-.5;}).slice(0,1);
   }
+  /* pas de redite : un point d'appui déjà dit dans le texte (« sérieuse » / « son sérieux ») est écarté */
+  var said0=out.map(function(x){return x[1];}).join(" ").toLowerCase();
+  ap=ap.filter(function(np){ return !(np.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).some(function(w){
+    return !/^(travail|classe|qualit|partic|implic)/.test(w)&&said0.indexOf(w.slice(0,5))>=0; }); });
   if(ap.length&&(seP.length||pot||r()<.9)){
     ap=ap.slice().sort(function(){return r()-.5;}).slice(0,2);
     var np=ap.join(" et "), forms;
-    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout."]
-                       :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+"."];
+    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout.",cap(np)+" porte ses fruits.","{Il} peut compter sur "+np+"."]
+                       :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" sont de vrais atouts.",cap(np)+" portent leurs fruits.","{Il} peut compter sur "+np+"."];
     var fi=Math.floor(r()*forms.length), apart=["ap:"+fi,forms[fi]];
     var lp=lastPol(out,W,C);
     if(fi<2&&lp!==null&&r()<.6) mergeInto(out,lp?", et ":", mais ",apart); else out.push(apart);
@@ -877,7 +881,7 @@ function generate(st,set,usage,seed){
     var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){if(seen[w])score+=9;seen[w]=1;});
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
     var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>1) score+=14*(shortN-1); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
-    score+=r()*12;
+    score+=r()*20;
     if(!best||score<best.score) best={score:score,text:text,ids:parts.map(function(p){return p[0].split(":")[0]+":"+p[0].split(":")[1];})};
   }
   best.tone=A.tone; return best;
@@ -948,8 +952,10 @@ function usageExcept(st){
   var u={};cls().students.forEach(function(o){if(o!==st)(o.ids||[]).forEach(function(i){u[i]=(u[i]||0)+1;});});return u;
 }
 function regen(st,newSeed){
-  if(newSeed) st.seed=(Math.random()*1e9)|0;
-  var g=generate(st,settings(),usageExcept(st),st.seed);
+  var u=usageExcept(st);
+  /* « Autre version » : éviter de reprendre les phrases de la version actuelle */
+  if(newSeed){ st.seed=(Math.random()*1e9)|0; (st.ids||[]).forEach(function(i){u[i]=(u[i]||0)+4;}); }
+  var g=generate(st,settings(),u,st.seed);
   st.txt=g.text;st.ids=g.ids;st.edited=false;st.ai=false;
 }
 function genAll(force){
