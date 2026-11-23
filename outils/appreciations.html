@@ -222,7 +222,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
         </div>
         <div class="help">
           <p><strong>Dans PRONOTE</strong>, ouvrez Bulletins, puis Appréciations des professeurs du bulletin, choisissez la classe et la période, puis cliquez sur le favori. Un panneau s'ouvre :</p>
-          <p>1. <em>Lire et copier les moyennes</em> (indiquez votre nom, par exemple COTTIN, pour avoir votre moyenne à vous), puis cliquez sur « Envoyer dans l'outil d'appréciations » : la page s'ouvre avec la liste et les moyennes déjà prêtes, il reste à cliquer sur « Ajouter ces élèves ». Sinon, cliquez ici sur « Coller la liste copiée » dans « Importer une liste d'élèves ».</p>
+          <p>1. <em>Lire et copier les moyennes</em> (indiquez votre nom, par exemple COTTIN, pour avoir votre moyenne à vous), puis cliquez sur « Envoyer dans l'outil d'appréciations » : l'outil s'ouvre, efface la liste de la classe affichée et la remplace par les élèves et moyennes de PRONOTE. Sinon, cliquez ici sur « Coller la liste copiée » dans « Importer une liste d'élèves » (même effet).</p>
           <p>2. Rédigez les appréciations ici, cliquez sur « Copier toutes les appréciations », collez-les dans le panneau et cliquez sur <em>Remplir les cases</em>. Vérifiez, puis enregistrez avec la disquette de PRONOTE.</p>
         </div>
       </div>
@@ -296,7 +296,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
     }
     sc.scrollTop=0;
     var lines=order.map(function(n){return n+"\t"+(res[n]||"");}), txt=lines.join("\n"), miss=order.filter(function(n){return !res[n];}).length;
-    copy(txt,function(){log(order.length+" élèves lus et copiés"+(miss?" ("+miss+" sans moyenne)":"")+".<br><a href='"+"https://dcottin.github.io/siteweb/outils/appreciations.html#apx="+encodeURIComponent(txt).replace(/'/g,"%27")+"' target='_blank' rel='noopener' style='display:inline-block;margin:8px 0;padding:6px 12px;background:#1e5d71;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold'>Envoyer dans l'outil d'appréciations</a><br>(ou collez-les dans l'outil, « Importer une liste d'élèves »)<pre style='white-space:pre-wrap;max-height:140px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");});
+    copy(txt,function(){log(order.length+" élèves lus et copiés"+(miss?" ("+miss+" sans moyenne)":"")+".<br><a href='"+"https://dcottin.github.io/siteweb/outils/appreciations.html#apx="+encodeURIComponent(txt).replace(/'/g,"%27")+"' target='_blank' rel='noopener' style='display:inline-block;margin:8px 0;padding:6px 12px;background:#1e5d71;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold'>Envoyer dans l'outil d'appréciations</a><br>(la liste de la classe affichée dans l'outil sera remplacée ; sinon : « Coller la liste copiée » dans l'outil)<pre style='white-space:pre-wrap;max-height:140px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");});
   };
   function setVal(el,v){
     if(el.isContentEditable){el.focus();el.textContent=v;}
@@ -1298,9 +1298,10 @@ renderSettings();renderList();save();
 /* liste envoyée par le favori PRONOTE (adresse en #apx=…, jamais transmise au serveur) */
 function importReceived(t,src){
   if(!t||!/\t/.test(t)){toast("Rien à importer : lisez d'abord les moyennes dans PRONOTE");return;}
-  $("importTxt").value=t; importScan(); $("importBox").open=true;
-  $("importBox").scrollIntoView({behavior:"smooth",block:"start"});
-  toast(src+" : vérifiez la classe choisie, puis cliquez sur « Ajouter ces élèves »");
+  $("importTxt").value=t; importScan();
+  if(!parseList(t).length){$("importBox").open=true;toast("Aucun élève reconnu dans la liste reçue");return;}
+  var rep=$("importReplace"), keep=rep.checked; rep.checked=true; $("importGo").click(); rep.checked=keep;
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 try{ var hm=location.hash.match(/^#apx=(.*)$/); if(hm){ var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); setTimeout(function(){importReceived(got,"Liste reçue de PRONOTE");},300); } }catch(e){}
 $("importPaste").addEventListener("click",function(){
