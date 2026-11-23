@@ -1115,7 +1115,7 @@ $("importTxt").addEventListener("input",importScan);
 $("importCol").addEventListener("change",importScan);
 $("importFile").addEventListener("change",function(){
   var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader();
-  rd.onload=function(){var t=String(rd.result);if(t.indexOf("�")>=0){var r2=new FileReader();r2.onload=function(){$("importTxt").value=String(r2.result);importScan();};r2.readAsText(f,"windows-1252");}else{$("importTxt").value=t;importScan();}};
+  rd.onload=function(){var t=String(rd.result);if(t.indexOf("\uFFFD")>=0){var r2=new FileReader();r2.onload=function(){$("importTxt").value=String(r2.result);importScan();};r2.readAsText(f,"windows-1252");}else{$("importTxt").value=t;importScan();}};
   rd.readAsText(f,"utf-8"); this.value="";
 });
 function normName(n){return norm(String(n||"").replace(/^Exemple\s*—\s*/,"")).replace(/[^a-z]+/g," ").trim();}
