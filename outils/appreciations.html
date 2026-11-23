@@ -163,16 +163,19 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
       <summary>Importer une liste d'élèves</summary>
       <div class="import-body">
         <div class="field">
+          <label class="field" id="importColWrap" hidden style="margin-bottom:8px"><span>Colonne de moyenne à utiliser</span><select id="importCol"></select></label>
           <textarea id="importTxt" placeholder="DUPONT Léa&#9;13,5&#10;MARTIN Yanis&#9;8,25&#10;…" aria-label="Liste à importer"></textarea>
           <div class="actions" style="margin-top:8px">
             <button class="primary" id="importGo" type="button">Ajouter ces élèves</button>
             <label class="check" style="padding:0"><input type="checkbox" id="importReplace"> Remplacer la liste actuelle</label>
+            <span class="status" id="importInfo"></span>
             <span class="spacer"></span>
             <label><input type="file" id="importFile" accept=".csv,.txt,text/csv,text/plain"></label>
           </div>
         </div>
         <div class="help">
-          <p><strong>Depuis PRONOTE ou un tableur</strong>, copiez les colonnes « Élève » et « Moyenne » puis collez-les ici. Vous pouvez aussi choisir un fichier CSV exporté.</p>
+          <p><strong>Depuis PRONOTE ou un tableur</strong>, copiez les colonnes « Élève » et « Moyenne » puis collez-les ici. Vous pouvez aussi choisir le fichier CSV exporté depuis le relevé de notes PRONOTE : s'il contient plusieurs moyennes (par exemple une par professeur), choisissez la bonne colonne.</p>
+          <p>Un élève déjà présent dans la classe n'est pas ajouté une deuxième fois : sa moyenne est simplement mise à jour, et ses réglages sont gardés.</p>
           <p>Une ligne par élève. Le nom peut être au format <code>NOM Prénom</code>. La moyenne est facultative (virgule ou point acceptés). Une colonne <code>Sexe</code> (F/G) est reconnue si elle existe.</p>
           <p>Le genre est deviné à partir du prénom pour accorder les adjectifs. Vérifiez-le sur chaque fiche (bouton F / G).</p>
         </div>
@@ -1058,12 +1061,14 @@ function albCall(prompt){
 })();
 /* ---------- import ---------- */
 function isNum(s){var m=String(s).trim().replace(",",".");return /^\d{1,2}(\.\d+)?$/.test(m)&&+m<=20;}
-function parseList(text){
+function parseList(text,moyCol){
+  text=String(text||"").replace(/^﻿/,"");
   var lines=text.split(/\r?\n/).map(function(l){return l.replace(/\s+$/,"");}).filter(function(l){return l.trim();});
-  if(!lines.length) return [];
+  var out=[]; out.cols=[];
+  if(!lines.length) return out;
   var sep=lines.some(function(l){return l.indexOf("\t")>=0;})?"\t":(lines.some(function(l){return l.indexOf(";")>=0;})?";":null);
   if(!sep&&lines.some(function(l){return /,/.test(l)&&!/\d,\d/.test(l);})) sep=",";
-  var hdr=null,out=[];
+  var hdr=null, prev=null;
   lines.forEach(function(l){
     var cells;
     if(sep) cells=l.split(sep).map(function(c){return c.trim().replace(/^"|"$/g,"").trim();});
@@ -1071,18 +1076,23 @@ function parseList(text){
     if(!hdr&&!out.length&&!cells.some(isNum)&&cells.some(function(c){return /nom|[ée]l[èe]ve|pr[ée]nom/i.test(c);})){
       hdr={};cells.forEach(function(c,i){
         if(/pr[ée]nom/i.test(c)) hdr.pre=i; else if(/^nom|[ée]l[èe]ve/i.test(c)&&hdr.nom==null) hdr.nom=i;
-        else if(/moy/i.test(c)&&hdr.moy==null) hdr.moy=i; else if(/sexe|genre/i.test(c)) hdr.sexe=i;});
+        else if(/sexe|genre/i.test(c)) hdr.sexe=i;
+        var up=prev&&prev[i]||"", lab=(up&&up!==c?up+" ":"")+c;
+        if(i!==hdr.nom&&i!==hdr.pre&&/moy/i.test(lab)) out.cols.push({i:i,label:lab.trim()});
+      });
+      hdr.moy=moyCol!=null?+moyCol:(out.cols.length?out.cols[0].i:null);
       return;
     }
+    prev=cells;
     var name,moy="",g=null;
     if(hdr&&hdr.nom!=null){
       name=(cells[hdr.nom]||"")+(hdr.pre!=null?" "+(cells[hdr.pre]||""):"");
-      if(hdr.moy!=null&&isNum(cells[hdr.moy]||"")) moy=cells[hdr.moy].replace(".",",");
+      if(hdr.moy!=null){ if(isNum(cells[hdr.moy]||"")) moy=cells[hdr.moy].replace(".",","); }
       else {var fn=cells.find(isNum); if(fn) moy=fn.replace(".",",");}
       if(hdr.sexe!=null){var sx=(cells[hdr.sexe]||"").toUpperCase();if(/^F/.test(sx))g="f";else if(/^[GM]/.test(sx))g="m";}
     } else {
       var names=[],num=null;
-      cells.forEach(function(c){if(!c)return;if(isNum(c)){if(num==null)num=c;}else if(!/^(abs|disp|n\.?\s?not|ab|nr|\*)$/i.test(c)&&!/^[FG]$/i.test(c))names.push(c);else if(/^F$/i.test(c))g="f";else if(/^G$/i.test(c))g="m";});
+      cells.forEach(function(c){if(!c)return;if(isNum(c)){if(num==null)num=c;}else if(!/^(abs|disp|n\.?\s?not|n\.?\s?rdu\*?|ab|nr|x|\*)$/i.test(c)&&!/^[FG]$/i.test(c))names.push(c);else if(/^F$/i.test(c))g="f";else if(/^G$/i.test(c))g="m";});
       name=names.join(" ");if(num!=null)moy=num.replace(".",",");
     }
     name=name.trim();
@@ -1091,18 +1101,37 @@ function parseList(text){
   });
   return out;
 }
+function importScan(){
+  var r=parseList($("importTxt").value), sel=$("importCol"), wrap=$("importColWrap");
+  if(r.cols.length>1){
+    var keep=sel.value;
+    sel.innerHTML=r.cols.map(function(c){return '<option value="'+c.i+'">'+esc(c.label)+'</option>';}).join("");
+    if(keep&&r.cols.some(function(c){return String(c.i)===keep;})) sel.value=keep;
+    wrap.hidden=false;
+  } else { wrap.hidden=true; sel.innerHTML=""; }
+  $("importInfo").textContent=r.length?r.length+" élève"+(r.length>1?"s":"")+" reconnu"+(r.length>1?"s":""):"";
+}
+$("importTxt").addEventListener("input",importScan);
+$("importCol").addEventListener("change",importScan);
 $("importFile").addEventListener("change",function(){
   var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader();
-  rd.onload=function(){var t=String(rd.result);if(t.indexOf("\uFFFD")>=0){var r2=new FileReader();r2.onload=function(){$("importTxt").value=String(r2.result);};r2.readAsText(f,"windows-1252");}else $("importTxt").value=t;};
-  rd.readAsText(f,"utf-8");
+  rd.onload=function(){var t=String(rd.result);if(t.indexOf("�")>=0){var r2=new FileReader();r2.onload=function(){$("importTxt").value=String(r2.result);importScan();};r2.readAsText(f,"windows-1252");}else{$("importTxt").value=t;importScan();}};
+  rd.readAsText(f,"utf-8"); this.value="";
 });
+function normName(n){return norm(String(n||"").replace(/^Exemple\s*—\s*/,"")).replace(/[^a-z]+/g," ").trim();}
 $("importGo").addEventListener("click",function(){
-  var rows=parseList($("importTxt").value);
+  var colSel=$("importColWrap").hidden?null:$("importCol").value;
+  var rows=parseList($("importTxt").value,colSel);
   if(!rows.length){toast("Aucun élève reconnu : une ligne par élève, nom puis moyenne");return;}
   var c=cls(); if($("importReplace").checked) c.students=[];
-  rows.forEach(function(r){c.students.push(newStudent(r));});
-  genAll(false); $("importTxt").value=""; $("importBox").open=false; save(); renderList();
-  toast(rows.length+" élève"+(rows.length>1?"s":"")+" importé"+(rows.length>1?"s":""));
+  var added=0, updated=0;
+  rows.forEach(function(r){
+    var ex=c.students.find(function(st){return normName(st.name)===normName(r.name);});
+    if(ex){ ex.moy=r.moy; if(r.g){ex.g=r.g;ex.gGuess=false;} updated++; if(!ex.edited) regen(ex,false); }
+    else { c.students.push(newStudent(r)); added++; }
+  });
+  genAll(false); $("importTxt").value=""; importScan(); $("importBox").open=false; save(); renderList();
+  toast((added?added+" élève"+(added>1?"s":"")+" ajouté"+(added>1?"s":""):"")+(added&&updated?", ":"")+(updated?updated+" moyenne"+(updated>1?"s":"")+" mise"+(updated>1?"s":"")+" à jour":""));
 });
 
 /* ---------- démarrage ---------- */
