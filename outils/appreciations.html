@@ -748,7 +748,9 @@ function candidate(st,set,A,r){
   // 3. travail et comportement
   var pts=(st.pts||[]).slice(), userPts=pts.length>0;
   var seP=[],seM=[]; Object.keys(st.se||{}).forEach(function(k){if(!SEMAP[k])return; if(st.se[k]>0)seP.push(k); else if(st.se[k]<0)seM.push(k);});
-  var showC = (C!==3 || r()<.3) && !(C>=3 && ((st.pts||[]).some(function(k){return k==="bavard"||k==="attention";})||seM.length)) && !(C<=1&&seP.length&&r()<.5);
+  /* le savoir-être, plus précis, remplace la phrase générale d'attitude (sauf attitude négative non détaillée) */
+  var seAny=seP.length+seM.length>0;
+  var showC = (C!==3 || r()<.3) && !(C>=3 && (st.pts||[]).some(function(k){return k==="bavard"||k==="attention";})) && !(seAny && !(C<=1 && !seM.length));
   if(coversW){ if(showC) out.push(pick(B.conduct[C].s,"cs"+C)); }
   else if(showC && r()<.5){
     var w=B.work[W].np, c=B.conduct[C].np;
@@ -1140,6 +1142,7 @@ function buildPrompt(group){
 "- Respecter le ton demandé pour chaque élève (Élogieux, Encourageant, Bienveillant, Ferme ou Alerte), en restant respectueux même quand le ton est ferme.",
 "- Ne jamais parler de félicitations, compliments ou encouragements (ce sont des mentions décidées par le conseil de classe), ni de la note chiffrée, ni comparer avec les autres élèves. Pas d'étiquette sur la personne (paresseux, faible…) : parler du travail et de l'attitude.",
 "- Si « Potentiel, capacités » figure dans les points d'appui, dire sobrement que l'élève a des capacités, en le reliant au travail fourni (capacités sous-exploitées si le travail est insuffisant).",
+"- Quand le savoir-être est renseigné, il prime sur l'attitude générale : ne pas répéter la même idée deux fois et ne jamais se contredire (par exemple attitude positive puis bavardages : écrire une seule phrase nuancée).",
 "- Utiliser les points d'appui, le savoir-être (points forts et à améliorer), les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
 set.useName?"- Tu peux citer l'élève une seule fois en écrivant exactement [Prénom] ; sinon utilise il ou elle.":"- Ne jamais nommer l'élève : utilise il ou elle, ou une tournure impersonnelle.",
 "- Varier les tournures et les débuts de phrase d'un élève à l'autre.",
