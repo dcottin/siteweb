@@ -130,9 +130,9 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
       </div>
       <span class="spacer"></span>
       <label class="field"><span>Niveau</span>
-        <select id="niv"><option value="2">Seconde</option><option value="1">Première</option><option value="0">Terminale</option></select></label>
+        <select id="niv"><optgroup label="Collège"><option value="c6">Sixième</option><option value="c5">Cinquième</option><option value="c4">Quatrième</option><option value="c3">Troisième</option></optgroup><optgroup label="Lycée professionnel"><option value="cap1">CAP 1re année</option><option value="cap2">CAP 2e année</option><option value="2">Seconde bac pro</option><option value="1">Première bac pro</option><option value="0">Terminale bac pro</option></optgroup></select></label>
       <label class="field"><span>Matière</span>
-        <select id="mat"><option value="ms">Maths-sciences</option><option value="m">Mathématiques</option><option value="s">Physique-chimie</option></select></label>
+        <select id="mat"><optgroup label="Collège"><option value="fr">Français</option><option value="m">Mathématiques</option><option value="hg">Histoire-géographie-EMC</option><option value="lva">Anglais (LV1)</option><option value="esp">Espagnol</option><option value="all">Allemand</option><option value="ita">Italien</option><option value="lv">Autre langue vivante</option><option value="svt">SVT</option><option value="s">Physique-chimie</option><option value="techno">Technologie</option><option value="ap">Arts plastiques</option><option value="mus">Éducation musicale</option><option value="eps">EPS</option><option value="lca">Latin, grec (LCA)</option><option value="dp">Découverte professionnelle</option></optgroup><optgroup label="Lycée professionnel (en plus des matières du collège)"><option value="ms">Maths-sciences</option><option value="pro">Enseignement professionnel</option><option value="ateliers">Atelier, pratique professionnelle</option><option value="pse">Prévention-santé-environnement</option><option value="ecogest">Économie-gestion</option><option value="ecodroit">Économie-droit</option><option value="aac">Arts appliqués</option><option value="coint">Co-intervention</option><option value="cdo">Chef-d'œuvre</option><option value="ap2">Accompagnement personnalisé</option><option value="consolid">Consolidation, orientation</option></optgroup><optgroup label="Autre"><option value="gen">Appréciation générale</option></optgroup></select></label>
     </div>
     <div class="row">
       <div class="field"><span>Période</span>
@@ -441,7 +441,8 @@ var POINTS = [
  ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise"],
  ["autonomie","Autonomie","gagner en autonomie face aux exercices"],
  ["materiel","Matériel","apporter son matériel à chaque séance"],
- ["ponct","Ponctualité","arriver à l'heure en cours"]
+ ["ponct","Ponctualité","arriver à l'heure en cours"],
+ ["implic","Implication","s'impliquer davantage dans les activités proposées"]
 ];
 var APPUIS = [
  ["oral","Participation orale","sa participation à l'oral"],
@@ -459,7 +460,24 @@ var APPUIS = [
 var APMAP = {}; APPUIS.forEach(function(p){APMAP[p[0]]=p;});
 var PTMAP = {}; POINTS.forEach(function(p){PTMAP[p[0]]=p;});
 var TONES = {E:"Élogieux",C:"Encourageant",B:"Bienveillant",F:"Ferme",A:"Alerte"};
-var MAT = {ms:"en maths-sciences", m:"en mathématiques", s:"en physique-chimie"};
+var MAT = {"fr": "en français", "m": "en mathématiques", "hg": "en histoire-géographie", "lva": "en anglais", "esp": "en espagnol", "all": "en allemand", "ita": "en italien", "lv": "en langue vivante", "svt": "en SVT", "s": "en physique-chimie", "techno": "en technologie", "ap": "en arts plastiques", "mus": "en éducation musicale", "eps": "en EPS", "lca": "en langues et cultures de l'Antiquité", "dp": "en découverte professionnelle", "ms": "en maths-sciences", "pro": "en enseignement professionnel", "ateliers": "à l'atelier", "pse": "en PSE", "ecogest": "en économie-gestion", "ecodroit": "en économie-droit", "aac": "en arts appliqués", "coint": "en co-intervention", "cdo": "dans le chef-d'œuvre", "ap2": "en accompagnement personnalisé", "consolid": "en consolidation", "gen": ""};
+/* fin d'année pour les niveaux sans phrases dédiées */
+var NEXT = {c6:["en cinquième",null],c5:["en quatrième",null],c4:["en troisième",null],c3:[null,"le brevet"],cap1:["en deuxième année de CAP",null],cap2:[null,"l'examen du CAP"]};
+function closeFor(P,T,niv){
+  if(P!==3) return BANK.close[P][T];
+  if(BANK.close[3][niv]) return BANK.close[3][niv][T];
+  var n=NEXT[niv]||["l'an prochain",null], suite=n[0], exam=n[1];
+  if(exam) return {E:["Bonne réussite pour "+exam+".","Bonne continuation, et bonne réussite pour "+exam+"."],
+    C:["Bon courage pour "+exam+", les efforts finiront par payer.","Il faut aborder "+exam+" avec la même régularité."],
+    B:["Il faut réviser sérieusement pour aborder "+exam+" dans de bonnes conditions.","Bon courage pour les révisions."],
+    F:["Des révisions sérieuses sont indispensables avant "+exam+".","Il faut se mettre aux révisions sans attendre."],
+    A:["Il faut se mettre au travail sans attendre pour préparer "+exam+"."]}[T];
+  return {E:["Bonne continuation "+suite+".","Une année réussie, bonne continuation "+suite+"."],
+    C:["Les efforts de l'année sont à poursuivre "+suite+".","Il faut garder cette dynamique "+suite+"."],
+    B:["Il faudra travailler plus régulièrement "+suite+".","Bonne continuation, avec plus de régularité l'an prochain."],
+    F:["Un travail beaucoup plus sérieux sera indispensable l'an prochain."],
+    A:["Il faudra s'investir bien davantage l'an prochain."]}[T];
+}
 
 function rngFrom(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function level(moy,w){
@@ -567,6 +585,8 @@ function candidate(st,set,A,r){
     if(C===1&&!showC) auto.push("bavard"); if(C===2&&!showC) auto.push("oral");
     if(N<=2&&W>=3) auto.push("entrain","questions","methode");
     if(N===3&&W>=3) auto.push("redac","soin");
+    var PRAT={eps:1,ap:1,mus:1,ateliers:1,pro:1,cdo:1,aac:1,techno:1};
+    if(PRAT[set.mat]) auto=auto.map(function(k){return {lecons:"implic",maison:"implic",evals:"implic",entrain:"autonomie",redac:"attention",soin:"attention",methode:"questions",calcul:"autonomie"}[k]||k;});
     if(auto.length&&T!=="E"&&r()<.75) pts=[auto[Math.floor(r()*auto.length)]];
     else pts=[];
   }
@@ -594,7 +614,7 @@ function candidate(st,set,A,r){
   if(behS) out.push(behS);
   // 6. conclusion
   if(r()<.7){
-    var cl = P===3 ? B.close[3][set.niv][T] : B.close[P][T];
+    var cl = closeFor(P,T,set.niv);
     out.push(pick(cl,"cl"+P+T));
   }
   return out;
@@ -860,8 +880,8 @@ $("add").addEventListener("click",function(){var st=newStudent({});regen(st,fals
 /* ---------- rédaction par Claude (avec le compte Claude de la personne qui ouvre la page) ---------- */
 var SAMPLE=null, aiBusy=false;
 (function(){ if(window.claude&&window.claude.use){ window.claude.use("sample").then(function(f){SAMPLE=f; if(f) document.body.classList.add("has-ai");}).catch(function(){}); } })();
-var NIVL={"2":"Seconde bac pro","1":"Première bac pro","0":"Terminale bac pro"};
-var MATL={ms:"mathématiques et sciences physiques",m:"mathématiques",s:"physique-chimie"};
+var NIVL={"c6":"Sixième (collège)","c5":"Cinquième (collège)","c4":"Quatrième (collège)","c3":"Troisième (collège, année du brevet)","cap1":"CAP première année","cap2":"CAP deuxième année (année de l'examen)","2":"Seconde bac pro","1":"Première bac pro","0":"Terminale bac pro (année de l'examen)"};
+var MATL={"fr": "français", "m": "mathématiques", "hg": "histoire-géographie et enseignement moral et civique", "lva": "anglais", "esp": "espagnol", "all": "allemand", "ita": "italien", "lv": "langue vivante", "svt": "sciences de la vie et de la Terre", "s": "physique-chimie", "techno": "technologie", "ap": "arts plastiques", "mus": "éducation musicale", "eps": "éducation physique et sportive", "lca": "langues et cultures de l'Antiquité", "dp": "découverte professionnelle", "ms": "mathématiques et physique-chimie", "pro": "enseignement professionnel (atelier, pratique professionnelle)", "ateliers": "pratique professionnelle en atelier", "pse": "prévention-santé-environnement", "ecogest": "économie-gestion", "ecodroit": "économie-droit", "aac": "arts appliqués et cultures artistiques", "coint": "co-intervention", "cdo": "réalisation du chef-d'œuvre", "ap2": "accompagnement personnalisé", "consolid": "consolidation des acquis et accompagnement à l'orientation", "gen": "appréciation générale (professeur principal)"};
 var PERL={T1:"1er trimestre",T2:"2e trimestre",T3:"3e trimestre (bilan de fin d'année)",S1:"1er semestre",S2:"2e semestre (bilan de fin d'année)"};
 var EVL={"-1":"en baisse par rapport à la période précédente","0":"stable","1":"en progrès par rapport à la période précédente"};
 function mask(t,st){
@@ -884,14 +904,14 @@ function profile(st,i){
 function buildPrompt(group){
   var set=settings(), max=+set.max||300, len=Math.min(+set.len,max-10);
   return [
-"Tu es professeur de "+MATL[set.mat]+" en lycée professionnel, classe de "+NIVL[set.niv]+". Rédige l'appréciation du bulletin ("+PERL[set.per]+") de chacun des élèves décrits ci-dessous, telle qu'un enseignant expérimenté l'écrirait dans PRONOTE.",
+(set.mat==="gen"?"Tu es professeur principal":"Tu es professeur de "+MATL[set.mat])+(set.niv.charAt(0)==="c"?" au collège":" en lycée professionnel")+", classe de "+NIVL[set.niv]+". Rédige l'appréciation du bulletin ("+PERL[set.per]+") de chacun des élèves décrits ci-dessous, telle qu'un enseignant expérimenté l'écrirait dans PRONOTE.",
 "",
 "Règles :",
 "- Français naturel et sobre, à la 3e personne, comme un vrai professeur l'écrit. Pas de formules creuses ou toutes faites, pas de tutoiement ni de vouvoiement.",
 "- Style sobre de bulletin : 3 ou 4 phrases simples, sans emphase ni superlatifs (remarquable, brillant, exemplaire, enthousiasme…), sans dramatiser.",
 "- Environ "+len+" caractères, et jamais plus de "+max+" caractères espaces comprises.",
 "- Structure : un constat factuel, une nuance si nécessaire, puis un conseil ou un progrès attendu, concret et accessible.",
-"- Adapter au moment de l'année : 1er trimestre ou 1er semestre = début d'année, installation des habitudes de travail ; 2e trimestre = progression, ce qui a changé ; dernière période = bilan de l'année et perspective (passage dans la classe suivante, ou examen pour la Terminale).",
+"- Adapter au moment de l'année : 1er trimestre ou 1er semestre = début d'année, installation des habitudes de travail ; 2e trimestre = progression, ce qui a changé ; dernière période = bilan de l'année et perspective (passage dans la classe suivante, ou examen pour la Troisième, le CAP 2e année et la Terminale).",
 "- Respecter le ton demandé pour chaque élève (Élogieux, Encourageant, Bienveillant, Ferme ou Alerte), en restant respectueux même quand le ton est ferme.",
 "- Ne jamais parler de félicitations, compliments ou encouragements (ce sont des mentions décidées par le conseil de classe), ni de la note chiffrée, ni comparer avec les autres élèves. Pas d'étiquette sur la personne (paresseux, faible…) : parler du travail et de l'attitude.",
 "- Utiliser les points d'appui, les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
@@ -994,7 +1014,7 @@ function albOne(st){
   var draft=generate(stx,dset,usageExcept(st),(Math.random()*1e9)|0).text;
   var pr=profile(st,0); delete pr.n;
   var info=Object.keys(pr).map(function(k){var v=pr[k];return "- "+k.replace(/_/g," ")+" : "+(Array.isArray(v)?v.join(", "):v);}).join("\n");
-  var sys="Tu aides un professeur de "+MATL[set.mat]+" de lycée professionnel ("+NIVL[set.niv]+") à écrire l'appréciation d'un bulletin scolaire ("+PERL[set.per]+"). "+
+  var sys="Tu aides "+(set.mat==="gen"?"un professeur principal":"un professeur de "+MATL[set.mat])+(set.niv.charAt(0)==="c"?" de collège":" de lycée professionnel")+" ("+NIVL[set.niv]+") à écrire l'appréciation d'un bulletin scolaire ("+PERL[set.per]+"). "+
     "Tu écris en français simple et naturel, comme un professeur l'écrit vraiment : phrases courtes, vocabulaire courant, à la troisième personne ("+(f?"elle":"il")+"). "+
     "Jamais de superlatifs, jamais de formules grandiloquentes, jamais de félicitations ni d'encouragements (ce sont des décisions du conseil de classe), jamais la note chiffrée. "+(named?"L'élève est désigné une fois par le marqueur [Prénom], à garder tel quel ; ensuite "+(f?"elle":"il")+". ":"Jamais de prénom. ")+
     "Pas de titre, pas de liste, pas de guillemets, pas de commentaire : tu réponds uniquement par le texte de l'appréciation, en un seul paragraphe.";
