@@ -95,6 +95,7 @@ details.pts[open] summary{margin-bottom:6px}
 body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
 .help a{color:var(--accent)}
 .pill.ai{background:var(--t-E);color:var(--surface)}
+.bm{display:inline-block;padding:8px 14px;border-radius:8px;background:var(--accent);color:var(--accent-ink)!important;font-weight:600;text-decoration:none;cursor:grab}
 .guess{font-size:11px;color:var(--muted)}
 .empty{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:var(--r)}
 .confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px}
@@ -209,10 +210,111 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
       </div>
     </details>
   </section>
+
+  <section class="panel">
+    <details class="import" id="pronoteBox">
+      <summary>Remplir PRONOTE automatiquement</summary>
+      <div class="import-body">
+        <div class="help">
+          <p><strong>Installer le favori (une seule fois) :</strong> faites glisser ce bouton dans la barre de favoris de votre navigateur.</p>
+          <p><a class="bm" id="bmLink" href="#" title="Faites-moi glisser dans la barre de favoris">Appréciations → PRONOTE</a></p>
+          <p>Si le glisser-déposer ne marche pas : <button type="button" id="bmCopy">Copier le code du favori</button>, créez un nouveau favori et collez ce code à la place de l'adresse.</p>
+        </div>
+        <div class="help">
+          <p><strong>Dans PRONOTE</strong>, ouvrez Bulletins, puis Appréciations des professeurs du bulletin, choisissez la classe et la période, puis cliquez sur le favori. Un panneau s'ouvre :</p>
+          <p>1. <em>Lire et copier les moyennes</em> (indiquez votre nom, par exemple COTTIN, pour avoir votre moyenne à vous), puis collez le résultat ici dans « Importer une liste d'élèves ».</p>
+          <p>2. Rédigez les appréciations ici, cliquez sur « Copier toutes les appréciations », collez-les dans le panneau et cliquez sur <em>Remplir les cases</em>. Vérifiez, puis enregistrez avec la disquette de PRONOTE.</p>
+        </div>
+      </div>
+    </details>
+  </section>
   <main class="list" id="list" aria-live="polite"></main>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
+<script type="text/plain" id="bmcode">(function(){
+  if(document.getElementById("apx-panel")){document.getElementById("apx-panel").remove();return;}
+  var norm=function(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z]+/g," ").trim();};
+  var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
+  var P=document.createElement("div"); P.id="apx-panel";
+  P.style.cssText="position:fixed;top:70px;right:16px;width:380px;max-height:80vh;overflow:auto;z-index:2147483647;background:#fff;color:#16242a;border:2px solid #1e5d71;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);font:13px/1.4 system-ui,sans-serif;padding:12px";
+  P.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">Appréciations → PRONOTE</b><button id="apx-x" style="border:0;background:none;font-size:18px;cursor:pointer">×</button></div>'+
+   '<div style="margin-bottom:10px"><b>1. Lire les moyennes</b><br>Enseignant (comme écrit dans PRONOTE, vide = moyenne générale) :<br><input id="apx-prof" style="width:100%;margin:4px 0;padding:4px" placeholder="ex. COTTIN"><button id="apx-read" style="padding:5px 10px;cursor:pointer">Lire et copier les moyennes</button></div>'+
+   '<div><b>2. Remplir les appréciations</b><br>Dans l\'outil, cliquez sur « Copier toutes les appréciations », puis collez ici :<textarea id="apx-txt" style="width:100%;height:90px;margin:4px 0;font:12px monospace"></textarea><button id="apx-fill" style="padding:5px 10px;cursor:pointer;background:#1e5d71;color:#fff;border:0;border-radius:6px">Remplir les cases</button></div>'+
+   '<div id="apx-log" style="margin-top:10px;font-size:12px"></div>';
+  document.body.appendChild(P);
+  var log=function(h){document.getElementById("apx-log").innerHTML=h;};
+  document.getElementById("apx-x").onclick=function(){P.remove();};
+  try{document.getElementById("apx-prof").value=localStorage.getItem("apx-prof")||"";}catch(e){}
+
+  
+  function leaves(){
+    var out=[], all=document.body.querySelectorAll("div,span,td,a,label");
+    for(var i=0;i<all.length;i++){var el=all[i]; if(P.contains(el)) continue;
+      if(el.children.length>2) continue; var t=(el.innerText||"").trim(); if(t&&t.length<60) out.push([el,t]);}
+    return out;
+  }
+  function rowOf(el){ return el.closest("tr,[role=row]")||el.parentElement; }
+  function numsIn(el){ return ((el&&el.innerText)||"").match(/\b\d{1,2},\d{2}\b/g)||[]; }
+
+  document.getElementById("apx-read").onclick=function(){
+    var prof=document.getElementById("apx-prof").value.trim(); try{localStorage.setItem("apx-prof",prof);}catch(e){}
+    var L=leaves(), res=[], seen={};
+    var nameRe=/^[A-ZÀ-Ý'’ -]{2,}(-[A-ZÀ-Ý]+)?\s+[A-ZÀ-Ý][a-zà-ÿ'’-]+(\s[A-ZÀ-Ý][a-zà-ÿ'’-]+)*$/;
+    L.forEach(function(p,idx){
+      var t=p[1]; if(!nameRe.test(t)||seen[t]||/MATHEMATIQUES|MOYENNE/i.test(t)) return;
+      var row=rowOf(p[0]), moy="";
+      if(prof){ // ligne suivante qui contient le nom de l'enseignant
+        for(var j=idx+1;j<Math.min(L.length,idx+400);j++){ var q=L[j][1];
+          if(q===t) continue; if(nameRe.test(q)&&q.toUpperCase().indexOf(prof.toUpperCase())<0) break;
+          if(q.toUpperCase().indexOf(prof.toUpperCase())>=0){ var n=numsIn(rowOf(L[j][0])); if(n.length){moy=n[n.length-1];break;} } }
+      } else { var n0=numsIn(row); if(n0.length) moy=n0[n0.length-1]; }
+      seen[t]=1; res.push(t+"\t"+moy);
+    });
+    if(!res.length){log("Aucun élève trouvé sur la page. Êtes-vous sur « Appréciations des professeurs du bulletin » ?");return;}
+    var txt=res.join("\n");
+    var done=function(){log(res.length+" élèves lus et copiés. Collez-les dans l'outil (Importer une liste d'élèves).<pre style='white-space:pre-wrap;max-height:120px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(done,function(){
+      var ta=document.createElement("textarea");ta.value=txt;P.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}ta.remove();done();});
+  };
+
+  function setVal(el,v){
+    if(el.isContentEditable){el.focus();el.textContent=v;}
+    else{var proto=el.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
+      var d=Object.getOwnPropertyDescriptor(proto,"value");d.set.call(el,v);}
+    ["input","keyup","change"].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});
+  }
+  function editor(){
+    var a=document.activeElement;
+    if(a&&!P.contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&a.type==="text")||a.isContentEditable)) return a;
+    var tas=[].slice.call(document.querySelectorAll("textarea,[contenteditable=true]")).filter(function(x){return !P.contains(x)&&x.offsetParent;});
+    return tas.length?tas[tas.length-1]:null;
+  }
+  function click(el){ var r=el.getBoundingClientRect(),o={bubbles:true,clientX:r.left+r.width/2,clientY:r.top+Math.min(r.height/2,20)};
+    ["mousedown","mouseup","click"].forEach(function(t){el.dispatchEvent(new MouseEvent(t,o));}); }
+
+  document.getElementById("apx-fill").onclick=async function(){
+    var lines=document.getElementById("apx-txt").value.split(/\r?\n/).filter(function(l){return l.indexOf("\t")>0;});
+    if(!lines.length){log("Collez d'abord les appréciations copiées depuis l'outil.");return;}
+    var L=leaves(), ok=[], ko=[];
+    for(var i=0;i<lines.length;i++){
+      var parts=lines[i].split("\t"), name=parts[0].replace(/^Exemple\s*—\s*/,""), txt=parts.slice(1).join(" ").trim();
+      var hit=L.find(function(p){return norm(p[1])===norm(name);});
+      if(!hit){ko.push(name+" (introuvable)");continue;}
+      var row=rowOf(hit[0]); row.scrollIntoView({block:"center"}); await wait(250);
+      var cells=row.querySelectorAll("td,[role=gridcell]"), target=cells.length?cells[cells.length-1]:row;
+      click(target); await wait(450);
+      var ed=editor();
+      if(!ed){ click(target); await wait(600); ed=editor(); }
+      if(!ed){ko.push(name+" (case non trouvée)");continue;}
+      setVal(ed,txt); await wait(150);
+      ed.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",keyCode:9,bubbles:true})); ed.blur&&ed.blur(); await wait(300);
+      ok.push(name);
+      log("Remplissage… "+ok.length+" / "+lines.length);
+    }
+    log("<b>"+ok.length+" appréciation(s) collée(s).</b> Vérifiez puis cliquez sur la disquette de PRONOTE pour enregistrer."+(ko.length?"<br><br>Non remplies :<br>"+ko.join("<br>"):""));
+  };
+})();</script>
 <script id="engine">
 /* ====================== MOTEUR DE RÉDACTION ======================
    Gabarits : [masc|fém] accorde selon le genre, {Il}/{il} = sujet (prénom au 1er emploi si l'option est cochée),
@@ -1058,6 +1160,13 @@ function albCall(prompt){
   $("albModel").addEventListener("change",function(){ALB.model=this.value;albSave();albRefresh();});
   $("albLoad").addEventListener("click",function(){ if(!ALB.key){toast("Collez d'abord votre clé API");return;} albModels(); });
   albRefresh();
+})();
+
+/* ---------- favori PRONOTE ---------- */
+(function(){
+  var code=($("bmcode")||{}).textContent||"", url="javascript:"+encodeURIComponent(code);
+  var a=$("bmLink"); if(a){a.setAttribute("href",url); a.addEventListener("click",function(e){e.preventDefault();toast("Faites glisser ce bouton dans la barre de favoris");});}
+  var c=$("bmCopy"); if(c) c.addEventListener("click",function(){copyText(url,null);});
 })();
 /* ---------- import ---------- */
 function isNum(s){var m=String(s).trim().replace(",",".");return /^\d{1,2}(\.\d+)?$/.test(m)&&+m<=20;}
