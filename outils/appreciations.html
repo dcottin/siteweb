@@ -694,6 +694,18 @@ function phaseOf(p){return p==="T1"||p==="S1"?1:(p==="T2"?2:3);}
 function okTone(entry,tone){var i=entry.indexOf("@");return i<0||entry.slice(i+1).indexOf(tone)>=0;}
 function txt(entry){var i=entry.indexOf("@");return i<0?entry:entry.slice(0,i);}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+/* liaison de deux phrases : « A. B. » → « A, mais b. » (évite l'enchaînement de phrases courtes) */
+function lcFirst(t){ if(/^\{Il\}/.test(t)) return "{il}"+t.slice(4); return /^[A-ZÀ-Ý][a-zà-ÿ' ]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t; }
+function joinable(a,b){ return a&&b&&/^(\{Il\} |L[ae] |L'|Les |Sa |Son |Ses |On |aux? |à )/.test(b)&&/\.$/.test(a)&&!/[:;]/.test(a)&&a.length+b.length<175&&!/\bmais\b/i.test(a+" "+b); }
+function lastFull(out){ for(var i=out.length-1;i>=0;i--) if(out[i][1]) return out[i]; return null; }
+/* tonalité de la dernière phrase : true positive, false négative, null inconnue */
+function lastPol(out,W,C){ var l=lastFull(out); if(!l) return null; var m=/^(ws|cs)(\d)/.exec(l[0]);
+  if(m) return m[1]==="ws"?(+m[2]>=3):(+m[2]>=3); if(/^ap/.test(l[0])) return true; return null; }
+function mergeInto(out,conn,part){
+  var last=lastFull(out);
+  if(!last||!joinable(last[1],part[1])) { out.push(part); return false; }
+  last[1]=last[1].replace(/\.$/,"")+conn+lcFirst(part[1]); out.push([part[0],""]); return true;
+}
 
 function analyse(st,set){
   var W=+st.w, C=+st.c, N=level(st.moy,W);
@@ -751,7 +763,10 @@ function candidate(st,set,A,r){
   /* le savoir-être, plus précis, remplace la phrase générale d'attitude (sauf attitude négative non détaillée) */
   var seAny=seP.length+seM.length>0;
   var showC = (C!==3 || r()<.3) && !(C>=3 && (st.pts||[]).some(function(k){return k==="bavard"||k==="attention";})) && !(seAny && !(C<=1 && !seM.length));
-  if(coversW){ if(showC) out.push(pick(B.conduct[C].s,"cs"+C)); }
+  if(coversW){ if(showC){ var cp=pick(B.conduct[C].s,"cs"+C), same=(posOpen===(C>=3));
+    if(!same&&r()<.75) mergeInto(out,", mais ",cp);
+    else if(same&&r()<.6&&/^\{Il\} |^L[ae'] /.test(cp[1])) out.push([cp[0],(C>=3?"En classe, ":"De plus, ")+lcFirst(cp[1])]);
+    else out.push(cp); } }
   else if(showC && r()<.5){
     var w=B.work[W].np, c=B.conduct[C].np;
     var wi=Math.floor(r()*w.length), ci=Math.floor(r()*c.length);
@@ -762,7 +777,8 @@ function candidate(st,set,A,r){
     out.push(["np"+W+C+":"+wi+ci,s]);
   } else {
     out.push(pick(B.work[W].s,"ws"+W));
-    if(showC) out.push(pick(B.conduct[C].s,"cs"+C));
+    if(showC){ var cpart=pick(B.conduct[C].s,"cs"+C);
+      if(r()<.7) mergeInto(out,(W>=3)===(C>=3)?", et ":", mais ",cpart); else out.push(cpart); }
   }
   // évite la redite entre la phrase de comportement et les points
   if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
@@ -780,7 +796,9 @@ function candidate(st,set,A,r){
     var np=ap.join(" et "), forms;
     forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout."]
                        :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+"."];
-    var fi=Math.floor(r()*forms.length); out.push(["ap:"+fi,forms[fi]]);
+    var fi=Math.floor(r()*forms.length), apart=["ap:"+fi,forms[fi]];
+    var lp=lastPol(out,W,C);
+    if(fi<2&&lp!==null&&r()<.6) mergeInto(out,lp?", et ":", mais ",apart); else out.push(apart);
   }
   var det=(st.detail||"").trim();
   if(det){det=cap(det); if(!/[.!?]$/.test(det)) det+="."; out.push(["det:0",det]);}
@@ -828,7 +846,11 @@ function candidate(st,set,A,r){
       out.push(["pt2:"+pts.slice(n,n+1).join("+"),"Il faudra aussi "+vp2+"."]);
     }
   }
-  if(behS) out.push(behS);
+  if(behS){
+    var bpart=[behS[0],behS[1].replace(/^Attention toutefois /,"")];
+    if(/^Attention toutefois /.test(behS[1])&&lastPol(out,W,C)===true&&r()<.75&&joinable(lastFull(out)[1],bpart[1])) mergeInto(out,", mais attention ",bpart);
+    else out.push(behS);
+  }
   if(beh2&&!(pts.length>1)) out.push(beh2);
   // 6. conclusion
   if(r()<.7){
@@ -853,7 +875,8 @@ function generate(st,set,usage,seed){
     if(set.useName&&(st.prenom||"").trim()&&text.indexOf(st.prenom.trim())<0) score+=150;
     parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
     var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){if(seen[w])score+=9;seen[w]=1;});
-    var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<3&&target>=180) score+=40;
+    var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
+    var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>1) score+=14*(shortN-1); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
     score+=r()*12;
     if(!best||score<best.score) best={score:score,text:text,ids:parts.map(function(p){return p[0].split(":")[0]+":"+p[0].split(":")[1];})};
   }
