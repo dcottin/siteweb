@@ -6,8 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
 <style>body{margin:0}</style>
-</head><body>
-<style>
+</head><body><style>
 /* Outil de bureau : barre de réglages de la classe en haut, puis une fiche par élève (réglages à gauche, appréciation à droite). */
 :root{
   --bg:#eef2f1; --surface:#ffffff; --surface-2:#f6f8f8; --ink:#16242a; --muted:#5a6b70; --line:#d5dddc;
@@ -168,6 +167,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
           <textarea id="importTxt" placeholder="DUPONT Léa&#9;13,5&#10;MARTIN Yanis&#9;8,25&#10;…" aria-label="Liste à importer"></textarea>
           <div class="actions" style="margin-top:8px">
             <button class="primary" id="importGo" type="button">Ajouter ces élèves</button>
+            <button type="button" id="importPaste">Coller la liste copiée</button>
             <label class="check" style="padding:0"><input type="checkbox" id="importReplace"> Remplacer la liste actuelle</label>
             <span class="status" id="importInfo"></span>
             <span class="spacer"></span>
@@ -222,7 +222,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
         </div>
         <div class="help">
           <p><strong>Dans PRONOTE</strong>, ouvrez Bulletins, puis Appréciations des professeurs du bulletin, choisissez la classe et la période, puis cliquez sur le favori. Un panneau s'ouvre :</p>
-          <p>1. <em>Lire et copier les moyennes</em> (indiquez votre nom, par exemple COTTIN, pour avoir votre moyenne à vous), puis collez le résultat ici dans « Importer une liste d'élèves ».</p>
+          <p>1. <em>Lire et copier les moyennes</em> (indiquez votre nom, par exemple COTTIN, pour avoir votre moyenne à vous), puis cliquez sur « Envoyer dans l'outil d'appréciations » : la page s'ouvre avec la liste et les moyennes déjà prêtes, il reste à cliquer sur « Ajouter ces élèves ». Sinon, cliquez ici sur « Coller la liste copiée » dans « Importer une liste d'élèves ».</p>
           <p>2. Rédigez les appréciations ici, cliquez sur « Copier toutes les appréciations », collez-les dans le panneau et cliquez sur <em>Remplir les cases</em>. Vérifiez, puis enregistrez avec la disquette de PRONOTE.</p>
         </div>
       </div>
@@ -296,7 +296,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
     }
     sc.scrollTop=0;
     var lines=order.map(function(n){return n+"\t"+(res[n]||"");}), txt=lines.join("\n"), miss=order.filter(function(n){return !res[n];}).length;
-    copy(txt,function(){log(order.length+" élèves lus et copiés"+(miss?" ("+miss+" sans moyenne)":"")+". Collez-les dans l'outil (Importer une liste d'élèves).<pre style='white-space:pre-wrap;max-height:140px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");});
+    copy(txt,function(){log(order.length+" élèves lus et copiés"+(miss?" ("+miss+" sans moyenne)":"")+".<br><a href='"+"https://dcottin.github.io/siteweb/outils/appreciations.html#apx="+encodeURIComponent(txt).replace(/'/g,"%27")+"' target='_blank' rel='noopener' style='display:inline-block;margin:8px 0;padding:6px 12px;background:#1e5d71;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold'>Envoyer dans l'outil d'appréciations</a><br>(ou collez-les dans l'outil, « Importer une liste d'élèves »)<pre style='white-space:pre-wrap;max-height:140px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");});
   };
   function setVal(el,v){
     if(el.isContentEditable){el.focus();el.textContent=v;}
@@ -1295,6 +1295,18 @@ $("importGo").addEventListener("click",function(){
 load();
 DB.classes.forEach(function(c){var u={};c.students.forEach(function(st){if(!st.txt){var save=DB.cur;DB.cur=c.id;regen(st,false);DB.cur=save;}});});
 renderSettings();renderList();save();
+/* liste envoyée par le favori PRONOTE (adresse en #apx=…, jamais transmise au serveur) */
+function importReceived(t,src){
+  if(!t||!/\t/.test(t)){toast("Rien à importer : lisez d'abord les moyennes dans PRONOTE");return;}
+  $("importTxt").value=t; importScan(); $("importBox").open=true;
+  $("importBox").scrollIntoView({behavior:"smooth",block:"start"});
+  toast(src+" : vérifiez la classe choisie, puis cliquez sur « Ajouter ces élèves »");
+}
+try{ var hm=location.hash.match(/^#apx=(.*)$/); if(hm){ var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); setTimeout(function(){importReceived(got,"Liste reçue de PRONOTE");},300); } }catch(e){}
+$("importPaste").addEventListener("click",function(){
+  if(!navigator.clipboard||!navigator.clipboard.readText){toast("Collez la liste dans la zone avec Ctrl+V");$("importTxt").focus();return;}
+  navigator.clipboard.readText().then(function(t){importReceived(t,"Liste collée");},function(){toast("Collez la liste dans la zone avec Ctrl+V");$("importBox").open=true;$("importTxt").focus();});
+});
 })();
 </script>
 
