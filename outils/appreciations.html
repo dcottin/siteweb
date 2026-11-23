@@ -820,7 +820,7 @@ function candidate(st,set,A,r){
     // mélange puis 1 ou 2 points
     pts=pts.slice().sort(function(){return r()-.5;});
     var n=1, chosen=pts.slice(0,n);
-    var vp=chosen.map(function(k){return PTMAP[k][2];}).join(" et ");
+    var vp=chosen.map(function(k){return k==="approf"&&N<4?"approfondir les notions vues en cours":PTMAP[k][2];}).join(" et ");
     var L=pick(B.lead[T],"ld"+T);
     out.push([L[0]+":"+chosen.join("+"),L[1].replace("{vp}",vp)]);
     if(pts.length>1&&userPts&&r()<.6){
@@ -833,7 +833,12 @@ function candidate(st,set,A,r){
   // 6. conclusion
   if(r()<.7){
     var cl = closeFor(P,T,set.niv);
-    out.push(pick(cl,"cl"+P+T));
+    /* après une critique, pas de « continuer ainsi » : on garde une conclusion tournée vers le progrès */
+    var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2;
+    if(crit){ var CONT=/continuer ainsi|poursuivre sur cette lancée|garder ce rythme|continuer sur cette voie|cette dynamique|même sérieux|très bon départ|il faut continuer|garder cette motivation/i;
+      var cl2=cl.filter(function(t){return !CONT.test(t);});
+      if(cl2.length) out.push(pick(cl2,"cl"+P+T)); }
+    else out.push(pick(cl,"cl"+P+T));
   }
   return out;
 }
