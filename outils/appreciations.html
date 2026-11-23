@@ -81,6 +81,9 @@ details.import[open] summary::before{content:"–"}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
 .chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.chip.se-p{background:color-mix(in srgb,var(--t-E) 16%,var(--surface));border-color:var(--t-E);color:var(--ink)}
+.chip.se-m{background:color-mix(in srgb,var(--t-A) 14%,var(--surface));border-color:var(--t-A);color:var(--ink)}
+.chip b{font-weight:700;margin-right:2px}.se-help{font-size:12px;color:var(--muted);margin:0 0 6px}
 details.pts summary{cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:600}
 details.pts[open] summary{margin-bottom:6px}
 .tone-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--tc)}
@@ -610,6 +613,27 @@ var APPUIS = [
  ["raison","Raisonnement","la qualité de son raisonnement"],
  ["entraide","Entraide","son esprit d'entraide"]
 ];
+/* savoir-être : [clé, libellé, point fort (groupe nominal), à améliorer (ton doux), à améliorer (ton ferme), conseil (verbe)] */
+var SE = [
+ ["particip","Participation","sa participation en classe",["Attention toutefois à participer davantage.","Il faudra participer davantage à l'oral."],["La participation en classe doit nettement progresser."],"participer davantage à l'oral"],
+ ["ecoute","Écoute, concentration","son écoute attentive",["Attention toutefois à ne pas se disperser.","Il faudra rester concentré[|e] tout au long des séances."],["La concentration doit s'améliorer nettement.","Il faut rester concentré[|e] pendant toute la séance."],"rester concentré[|e] tout au long des séances"],
+ ["calme","Calme, bavardages","son calme en classe",["Attention toutefois aux bavardages.","Il faudra limiter les bavardages."],["Les bavardages doivent cesser.","Les bavardages doivent impérativement cesser."],"limiter les bavardages"],
+ ["consignes","Respect des consignes","son respect des consignes",["Attention toutefois à bien respecter les consignes.","Il faudra respecter plus attentivement les consignes."],["Les consignes doivent être respectées.","Le respect des consignes n'est pas négociable."],"respecter davantage les consignes"],
+ ["respect","Respect des autres","son respect des autres",["Attention toutefois à garder une attitude respectueuse envers chacun."],["Une attitude plus respectueuse envers les autres est attendue.","Le manque de respect envers les autres doit cesser."],"adopter une attitude plus respectueuse"],
+ ["politesse","Politesse","sa politesse",["Attention toutefois à rester poli[|e] en toutes circonstances."],["Un comportement plus poli est attendu.","La politesse est de rigueur en classe."],"rester poli[|e] en toutes circonstances"],
+ ["ponct","Ponctualité","sa ponctualité",["Attention toutefois aux retards.","Il faudra veiller à arriver à l'heure."],["Les retards doivent cesser.","La ponctualité doit être respectée."],"arriver à l'heure en cours"],
+ ["materiel","Organisation, matériel","sa bonne organisation",["Attention toutefois à ne pas oublier son matériel.","Il faudra penser à apporter son matériel."],["Le matériel doit être apporté à chaque séance.","Les oublis de matériel doivent cesser."],"apporter son matériel à chaque séance"],
+ ["motiv","Motivation, implication","son implication",["Il faudra s'impliquer davantage dans les activités proposées.","Attention toutefois à une attitude parfois passive."],["Une implication bien plus grande est attendue.","L'attitude est trop passive en classe."],"s'impliquer davantage"],
+ ["autonomie","Autonomie","son autonomie",["Il faudra gagner en autonomie.","Attention toutefois à ne pas attendre systématiquement de l'aide."],["Plus d'autonomie est attendue face au travail.","{Il} doit apprendre à travailler sans attendre qu'on [le|la] relance."],"gagner en autonomie"],
+ ["groupe","Travail en groupe, entraide","son esprit d'entraide",["Attention toutefois à mieux coopérer lors des travaux en groupe."],["Le travail en groupe doit être plus constructif."],"mieux coopérer lors des travaux en groupe"],
+ ["confiance","Confiance en soi","son assurance",["{Il} doit prendre confiance en ses capacités.","Il faut oser davantage et prendre confiance en soi."],["{Il} doit prendre confiance en ses capacités et oser davantage."],"prendre confiance en ses capacités"]
+];
+var SEMAP = {}; SE.forEach(function(p){SEMAP[p[0]]=p;});
+/* anciens choix (points d'appui ou à travailler) qui relèvent désormais du savoir-être */
+var SE_FROM_PTS={bavard:"calme",attention:"ecoute",ponct:"ponct",materiel:"materiel",implic:"motiv",oral:"particip",autonomie:"autonomie"};
+var SE_FROM_AP={oral:"particip",auto:"autonomie",entraide:"groupe"};
+var EVO2={up:["Les progrès depuis le {per} précédent sont très nets.","Le {per} marque une nette progression.","Les efforts fournis depuis le {per} précédent se voient nettement dans les résultats."],
+          down:["Les résultats sont en net recul par rapport au {per} précédent.","Le recul depuis le {per} précédent est important.","Les résultats ont nettement baissé depuis le {per} précédent."]};
 var APMAP = {}; APPUIS.forEach(function(p){APMAP[p[0]]=p;});
 var PTMAP = {}; POINTS.forEach(function(p){PTMAP[p[0]]=p;});
 var TONES = {E:"Élogieux",C:"Encourageant",B:"Bienveillant",F:"Ferme",A:"Alerte"};
@@ -696,13 +720,15 @@ function candidate(st,set,A,r){
   else out.push(pick(B.open[P][N],"o"+P+N));
   // 2. évolution
   var e=+st.evo;
-  if(P>1&&e!==0&&r()<.9){
+  if(P>1&&Math.abs(e)===2) out.push(pick(EVO2[e>0?"up":"down"],"ev2"+(e>0?"up":"down")));
+  else if(P>1&&e!==0&&r()<.9){
     var key=(e>0?"up":"down")+(posOpen?"AfterPos":"AfterNeg");
     out.push(pick(B.evo[key],"ev"+key));
   }
   // 3. travail et comportement
   var pts=(st.pts||[]).slice(), userPts=pts.length>0;
-  var showC = (C!==3 || r()<.3) && !(C>=3 && (st.pts||[]).some(function(k){return k==="bavard"||k==="attention";}));
+  var seP=[],seM=[]; Object.keys(st.se||{}).forEach(function(k){if(!SEMAP[k])return; if(st.se[k]>0)seP.push(k); else if(st.se[k]<0)seM.push(k);});
+  var showC = (C!==3 || r()<.3) && !(C>=3 && ((st.pts||[]).some(function(k){return k==="bavard"||k==="attention";})||seM.length)) && !(C<=1&&seP.length&&r()<.5);
   if(coversW){ if(showC) out.push(pick(B.conduct[C].s,"cs"+C)); }
   else if(showC && r()<.5){
     var w=B.work[W].np, c=B.conduct[C].np;
@@ -719,10 +745,11 @@ function candidate(st,set,A,r){
   // évite la redite entre la phrase de comportement et les points
   if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
   // 3 bis. points d'appui et détail observé
-  var ap=(st.appui||[]).filter(function(k){return APMAP[k];});
-  if(ap.length&&r()<.9){
+  var ap=(st.appui||[]).filter(function(k){return APMAP[k];}).map(function(k){return APMAP[k][2];});
+  seP.forEach(function(k){ap.push(SEMAP[k][2]);});
+  if(ap.length&&(seP.length||r()<.9)){
     ap=ap.slice().sort(function(){return r()-.5;}).slice(0,2);
-    var np=ap.map(function(k){return APMAP[k][2];}).join(" et "), forms;
+    var np=ap.join(" et "), forms;
     forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui."]
                        :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+"."];
     var fi=Math.floor(r()*forms.length); out.push(["ap:"+fi,forms[fi]]);
@@ -749,8 +776,14 @@ function candidate(st,set,A,r){
            ponct:[["Attention toutefois aux retards.","Il faudra toutefois veiller à arriver à l'heure."],["Les retards doivent cesser.","La ponctualité doit être respectée."]],
            materiel:[["Attention toutefois à ne pas oublier son matériel.","Il faudra toutefois penser à apporter son matériel."],["Le matériel doit être apporté à chaque séance.","Les oublis de matériel doivent cesser."]]};
   var beh=pts.filter(function(k){return BEH[k];}); pts=pts.filter(function(k){return !BEH[k];});
-  var behS=null;
-  if(beh.length){var bk=beh[Math.floor(r()*beh.length)], firm=(T==="F"||T==="A")?1:0, bl=BEH[bk][firm], bi=Math.floor(r()*bl.length);
+  var behS=null, beh2=null;
+  if(seM.length){
+    var sm=seM.slice().sort(function(){return r()-.5;}), firm2=(T==="F"||T==="A")?4:3, k1=sm[0], l1=SEMAP[k1][firm2], i1=Math.floor(r()*l1.length);
+    behS=["se"+k1+firm2+":"+i1, posOpen||pts.length||firm2===4?l1[i1]:l1[i1].replace(" toutefois","")];
+    if(sm.length>1&&r()<.6) beh2=["se2"+sm[1]+":0","Il faudra aussi "+SEMAP[sm[1]][5]+"."];
+    if(!userPts) pts=pts.filter(function(k){return !SE_FROM_PTS[k];});
+  }
+  else if(beh.length){var bk=beh[Math.floor(r()*beh.length)], firm=(T==="F"||T==="A")?1:0, bl=BEH[bk][firm], bi=Math.floor(r()*bl.length);
     if(firm) behS=["bh"+bk+firm+":"+bi,bl[bi]]; else behS=["bh"+bk+firm+":"+bi, pts.length?bl[bi]:bl[bi].replace(" toutefois","")];}
   if(pts.length){
     // mélange puis 1 ou 2 points
@@ -765,6 +798,7 @@ function candidate(st,set,A,r){
     }
   }
   if(behS) out.push(behS);
+  if(beh2&&!(pts.length>1)) out.push(beh2);
   // 6. conclusion
   if(r()<.7){
     var cl = closeFor(P,T,set.niv);
@@ -789,7 +823,7 @@ function generate(st,set,usage,seed){
   }
   best.tone=A.tone; return best;
 }
-if(typeof module!=="undefined") module.exports={generate:generate,analyse:analyse,POINTS:POINTS,APPUIS:APPUIS};
+if(typeof module!=="undefined") module.exports={generate:generate,analyse:analyse,POINTS:POINTS,APPUIS:APPUIS,SE:SE};
 </script>
 
 <script>
@@ -822,7 +856,7 @@ function newStudent(o){
   o=o||{};
   var full=o.name||"Nouvel élève", sp=splitName(full);
   var g=o.g||guessG(sp.prenom);
-  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
+  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],se:o.se||{},detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
 }
 function sample(){
   var s=[
@@ -839,7 +873,10 @@ var DB=null;
 function load(){
   try{var raw=localStorage.getItem(KEY); if(raw){DB=JSON.parse(raw);}}catch(e){}
   if(!DB||!DB.classes||!DB.classes.length){DB={classes:[sample()],cur:null};}
-  DB.classes.forEach(function(c){c.len={"150":"140","220":"190","320":"280"}[c.len]||c.len;});
+  DB.classes.forEach(function(c){c.len={"150":"140","220":"190","320":"280"}[c.len]||c.len;
+    c.students.forEach(function(st){ if(st.se) return; st.se={};
+      st.pts=(st.pts||[]).filter(function(k){if(SE_FROM_PTS[k]){st.se[SE_FROM_PTS[k]]=-1;return false;}return true;});
+      st.appui=(st.appui||[]).filter(function(k){if(SE_FROM_AP[k]){st.se[SE_FROM_AP[k]]=1;return false;}return true;}); });});
   if(!DB.cur||!DB.classes.some(function(c){return c.id===DB.cur;})) DB.cur=DB.classes[0].id;
 }
 var saveT=null;
@@ -881,11 +918,13 @@ function cardHTML(st){
   var set=settings(), tone=toneOf(st), ph=analyse(st,set).phase, max=+set.max||0, n=st.txt.length;
   var tsel='<option value="auto"'+(st.ton==="auto"?" selected":"")+'>Auto ('+TONES[tone].toLowerCase()+')</option>'+
     Object.keys(TONES).map(function(k){return '<option value="'+k+'"'+(st.ton===k?" selected":"")+">"+TONES[k]+"</option>";}).join("");
-  var chips=POINTS.map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var chips=POINTS.filter(function(p){return !SE_FROM_PTS[p[0]]||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var appui=st.appui||[];
-  var apchips=APPUIS.map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var apchips=APPUIS.filter(function(p){return !SE_FROM_AP[p[0]]||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var apch=appui.map(function(k){return APMAP[k][1];}).join(", ");
   var chosen=st.pts.map(function(k){return PTMAP[k][1];}).join(", ");
+  var se=st.se||{}, seSum=SE.filter(function(p){return se[p[0]];}).map(function(p){return (se[p[0]]>0?"+ ":"− ")+p[1];}).join(", ");
+  var sechips=SE.map(function(p){var v=se[p[0]]||0;return '<button type="button" class="chip'+(v>0?" se-p":v<0?" se-m":"")+'" data-se="'+p[0]+'" aria-label="'+esc(p[1])+(v>0?" : point fort":v<0?" : à améliorer":"")+'">'+(v>0?"<b>+</b>":v<0?"<b>−</b>":"")+esc(p[1])+"</button>";}).join("");
   return ''+
   '<div class="left">'+
     '<div class="name-row"><input type="text" data-f="name" id="n-'+st.id+'" value="'+esc(st.name)+'" aria-label="Nom de l\'élève">'+
@@ -894,7 +933,7 @@ function cardHTML(st){
       '<div class="field"><span>Genre</span><div class="seg" data-seg="g"><button type="button" data-v="f" aria-pressed="'+(st.g==="f")+'">F</button><button type="button" data-v="m" aria-pressed="'+(st.g==="m")+'">G</button></div></div>'+
       '<label class="field"><span>Moyenne</span><input type="number" min="0" max="20" step="0.01" data-f="moy" id="m-'+st.id+'" value="'+esc(String(st.moy).replace(",","."))+'" placeholder="—"></label>'+
       '<div class="field"><span>Évolution</span><div class="seg" data-seg="evo">'+
-        [[-1,"En baisse","↘"],[0,"Stable","="],[1,"En hausse","↗"]].map(function(e){return '<button type="button" data-v="'+e[0]+'" title="'+e[1]+'" aria-label="'+e[1]+'" aria-pressed="'+(+st.evo===e[0])+'"'+(ph===1?" disabled":"")+">"+e[2]+"</button>";}).join("")+
+        [[-2,"Net recul","⇊"],[-1,"En baisse","↘"],[0,"Stable","="],[1,"En hausse","↗"],[2,"Net progrès","⇈"]].map(function(e){return '<button type="button" data-v="'+e[0]+'" title="'+e[1]+'" aria-label="'+e[1]+'" aria-pressed="'+(+st.evo===e[0])+'"'+(ph===1?" disabled":"")+">"+e[2]+"</button>";}).join("")+
       '</div></div>'+
       '<label class="check"><input type="checkbox" data-f="abs"'+(st.abs?" checked":"")+'> Absences</label>'+
     '</div>'+
@@ -903,6 +942,7 @@ function cardHTML(st){
       '<label class="field"><span>Attitude</span><select data-f="c" id="c-'+st.id+'">'+opts(CL,st.c)+'</select></label>'+
       '<label class="field"><span>Ton</span><select data-f="ton" id="t-'+st.id+'">'+tsel+'</select></label>'+
     '</div>'+
+    '<details class="pts"'+(st._openS?" open":"")+' data-d="s"><summary>Savoir-être'+(seSum?" : "+esc(seSum):"")+'</summary><p class="se-help">1 clic : point fort (+). 2 clics : à améliorer (−). 3 clics : retirer.</p><div class="chips">'+sechips+'</div></details>'+
     '<details class="pts"'+(st._openA?" open":"")+' data-d="a"><summary>Points d\'appui'+(apch?" : "+esc(apch):"")+'</summary><div class="chips">'+apchips+'</div></details>'+
     '<details class="pts"'+(st._open?" open":"")+' data-d="p"><summary>Points à travailler'+(chosen?" : "+esc(chosen):" (choisis automatiquement si vide)")+'</summary><div class="chips">'+chips+'</div></details>'+
     '<label class="field"><span>Détail observé (facultatif)</span><input type="text" data-f="detail" id="d-'+st.id+'" value="'+esc(st.detail||"")+'" placeholder="ex. : très bon exposé sur le recyclage de l\'acier"></label>'+
@@ -931,7 +971,7 @@ function renderList(){
 function refreshCard(st,keepFocus){
   var el=document.querySelector('.card[data-id="'+st.id+'"]'); if(!el) return;
   var a=document.activeElement, fid=a&&a.id, ss=a&&a.selectionStart, se=a&&a.selectionEnd;
-  st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open;
+  st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open; st._openS=!!(el.querySelector('details[data-d="s"]')||{}).open;
   paintCard(el,st);
   if(keepFocus&&fid){var f=$(fid); if(f){f.focus(); try{if(ss!=null&&f.setSelectionRange) f.setSelectionRange(ss,se);}catch(e){}}}
 }
@@ -958,6 +998,7 @@ list.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return; var st=stOf(b); if(!st) return;
   var segEl=b.closest("[data-seg]");
   if(segEl&&!b.disabled){var k=segEl.dataset.seg;st[k]=k==="evo"?+b.dataset.v:b.dataset.v;if(k==="g")st.gGuess=false;if(!st.edited)regen(st,false);refreshCard(st);save();status();return;}
+  if(b.dataset.se){st.se=st.se||{};var sv=st.se[b.dataset.se]||0;sv=sv===0?1:sv===1?-1:0;if(sv)st.se[b.dataset.se]=sv;else delete st.se[b.dataset.se];if(!st.edited)regen(st,false);refreshCard(st);save();return;}
   if(b.dataset.ap){st.appui=st.appui||[];var j=st.appui.indexOf(b.dataset.ap);if(j>=0)st.appui.splice(j,1);else st.appui.push(b.dataset.ap);if(!st.edited)regen(st,false);refreshCard(st);save();return;}
   if(b.dataset.pt){var i=st.pts.indexOf(b.dataset.pt);if(i>=0)st.pts.splice(i,1);else st.pts.push(b.dataset.pt);if(!st.edited)regen(st,false);refreshCard(st);save();status();return;}
   var act=b.dataset.act;
@@ -1036,7 +1077,7 @@ var SAMPLE=null, aiBusy=false;
 var NIVL={"c6":"Sixième (collège)","c5":"Cinquième (collège)","c4":"Quatrième (collège)","c3":"Troisième (collège, année du brevet)","cap1":"CAP première année","cap2":"CAP deuxième année (année de l'examen)","2":"Seconde bac pro","1":"Première bac pro","0":"Terminale bac pro (année de l'examen)"};
 var MATL={"fr": "français", "m": "mathématiques", "hg": "histoire-géographie et enseignement moral et civique", "lva": "anglais", "esp": "espagnol", "all": "allemand", "ita": "italien", "lv": "langue vivante", "svt": "sciences de la vie et de la Terre", "s": "physique-chimie", "techno": "technologie", "ap": "arts plastiques", "mus": "éducation musicale", "eps": "éducation physique et sportive", "lca": "langues et cultures de l'Antiquité", "dp": "découverte professionnelle", "ms": "mathématiques et physique-chimie", "pro": "enseignement professionnel (atelier, pratique professionnelle)", "ateliers": "pratique professionnelle en atelier", "pse": "prévention-santé-environnement", "ecogest": "économie-gestion", "ecodroit": "économie-droit", "aac": "arts appliqués et cultures artistiques", "coint": "co-intervention", "cdo": "réalisation du chef-d'œuvre", "ap2": "accompagnement personnalisé", "consolid": "consolidation des acquis et accompagnement à l'orientation", "gen": "appréciation générale (professeur principal)"};
 var PERL={T1:"1er trimestre",T2:"2e trimestre",T3:"3e trimestre (bilan de fin d'année)",S1:"1er semestre",S2:"2e semestre (bilan de fin d'année)"};
-var EVL={"-1":"en baisse par rapport à la période précédente","0":"stable","1":"en progrès par rapport à la période précédente"};
+var EVL={"-2":"en net recul par rapport à la période précédente","-1":"en baisse par rapport à la période précédente","0":"stable","1":"en progrès par rapport à la période précédente","2":"en net progrès par rapport à la période précédente"};
 function mask(t,st){
   t=String(t||"");
   [st.prenom].concat((st.name||"").replace(/^Exemple\s*—\s*/,"").split(/\s+/)).forEach(function(w){
@@ -1051,6 +1092,8 @@ function profile(st,i){
   if(st.abs) o.absences="nombreuses absences";
   if((st.appui||[]).length) o.points_d_appui=st.appui.map(function(k){return APMAP[k][1];});
   if(st.pts.length) o.a_travailler=st.pts.map(function(k){return PTMAP[k][1];});
+  var sev=st.se||{}, sp=SE.filter(function(p){return sev[p[0]]>0;}).map(function(p){return p[1];}), sm=SE.filter(function(p){return sev[p[0]]<0;}).map(function(p){return p[1];});
+  if(sp.length) o.savoir_etre_points_forts=sp; if(sm.length) o.savoir_etre_a_ameliorer=sm;
   if((st.detail||"").trim()) o.detail_observe=mask(st.detail,st);
   return o;
 }
@@ -1067,7 +1110,7 @@ function buildPrompt(group){
 "- Adapter au moment de l'année : 1er trimestre ou 1er semestre = début d'année, installation des habitudes de travail ; 2e trimestre = progression, ce qui a changé ; dernière période = bilan de l'année et perspective (passage dans la classe suivante, ou examen pour la Troisième, le CAP 2e année et la Terminale).",
 "- Respecter le ton demandé pour chaque élève (Élogieux, Encourageant, Bienveillant, Ferme ou Alerte), en restant respectueux même quand le ton est ferme.",
 "- Ne jamais parler de félicitations, compliments ou encouragements (ce sont des mentions décidées par le conseil de classe), ni de la note chiffrée, ni comparer avec les autres élèves. Pas d'étiquette sur la personne (paresseux, faible…) : parler du travail et de l'attitude.",
-"- Utiliser les points d'appui, les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
+"- Utiliser les points d'appui, le savoir-être (points forts et à améliorer), les points à travailler et le détail observé quand ils sont fournis, sans les recopier mot pour mot.",
 set.useName?"- Tu peux citer l'élève une seule fois en écrivant exactement [Prénom] ; sinon utilise il ou elle.":"- Ne jamais nommer l'élève : utilise il ou elle, ou une tournure impersonnelle.",
 "- Varier les tournures et les débuts de phrase d'un élève à l'autre.",
 "",
