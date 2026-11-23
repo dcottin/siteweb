@@ -237,82 +237,130 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
   var norm=function(s){return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z]+/g," ").trim();};
   var wait=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
   var P=document.createElement("div"); P.id="apx-panel";
-  P.style.cssText="position:fixed;top:70px;right:16px;width:380px;max-height:80vh;overflow:auto;z-index:2147483647;background:#fff;color:#16242a;border:2px solid #1e5d71;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);font:13px/1.4 system-ui,sans-serif;padding:12px";
+  P.style.cssText="position:fixed;top:70px;right:16px;width:360px;max-height:80vh;overflow:auto;z-index:2147483647;background:#fff;color:#16242a;border:2px solid #1e5d71;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);font:13px/1.4 system-ui,sans-serif;padding:12px";
   P.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">Appréciations → PRONOTE</b><button id="apx-x" style="border:0;background:none;font-size:18px;cursor:pointer">×</button></div>'+
-   '<div style="margin-bottom:10px"><b>1. Lire les moyennes</b><br>Enseignant (comme écrit dans PRONOTE, vide = moyenne générale) :<br><input id="apx-prof" style="width:100%;margin:4px 0;padding:4px" placeholder="ex. COTTIN"><button id="apx-read" style="padding:5px 10px;cursor:pointer">Lire et copier les moyennes</button></div>'+
+   '<div style="margin-bottom:10px"><b>1. Lire les moyennes</b><br>Votre nom, comme écrit dans PRONOTE (vide = moyenne générale) :<br><input id="apx-prof" style="width:100%;margin:4px 0;padding:4px" placeholder="ex. COTTIN"><button id="apx-read" style="padding:5px 10px;cursor:pointer">Lire et copier les moyennes</button></div>'+
    '<div><b>2. Remplir les appréciations</b><br>Dans l\'outil, cliquez sur « Copier toutes les appréciations », puis collez ici :<textarea id="apx-txt" style="width:100%;height:90px;margin:4px 0;font:12px monospace"></textarea><button id="apx-fill" style="padding:5px 10px;cursor:pointer;background:#1e5d71;color:#fff;border:0;border-radius:6px">Remplir les cases</button></div>'+
    '<div id="apx-log" style="margin-top:10px;font-size:12px"></div>';
   document.body.appendChild(P);
   var log=function(h){document.getElementById("apx-log").innerHTML=h;};
   document.getElementById("apx-x").onclick=function(){P.remove();};
   try{document.getElementById("apx-prof").value=localStorage.getItem("apx-prof")||"";}catch(e){}
-
-  
+  var NAME=/^[A-ZÀ-Ý][A-ZÀ-Ý'’ -]+\s+[A-ZÀ-Ý][a-zà-ÿ'’-]+(?:[\s-][A-ZÀ-Ý][a-zà-ÿ'’-]+)*$/;
+  var NUM=/^\d{1,2},\d{2}$/;
   function leaves(){
-    var out=[], all=document.body.querySelectorAll("div,span,td,a,label");
+    var out=[], all=document.body.querySelectorAll("div,span,td,th,a,label,p,b,strong");
     for(var i=0;i<all.length;i++){var el=all[i]; if(P.contains(el)) continue;
-      if(el.children.length>2) continue; var t=(el.innerText||"").trim(); if(t&&t.length<60) out.push([el,t]);}
+      var t=(el.innerText||"").trim(); if(!t||t.length>70) continue;
+      var dup=false; for(var k=0;k<el.children.length;k++){ if((el.children[k].innerText||"").trim()===t){dup=true;break;} }
+      if(dup) continue;
+      var r=el.getBoundingClientRect(); if(!r.width||!r.height) continue;
+      out.push({el:el,t:t,r:r});}
     return out;
   }
-  function rowOf(el){ return el.closest("tr,[role=row]")||el.parentElement; }
-  function numsIn(el){ return ((el&&el.innerText)||"").match(/\b\d{1,2},\d{2}\b/g)||[]; }
-
-  document.getElementById("apx-read").onclick=function(){
-    var prof=document.getElementById("apx-prof").value.trim(); try{localStorage.setItem("apx-prof",prof);}catch(e){}
-    var L=leaves(), res=[], seen={};
-    var nameRe=/^[A-ZÀ-Ý'’ -]{2,}(-[A-ZÀ-Ý]+)?\s+[A-ZÀ-Ý][a-zà-ÿ'’-]+(\s[A-ZÀ-Ý][a-zà-ÿ'’-]+)*$/;
-    L.forEach(function(p,idx){
-      var t=p[1]; if(!nameRe.test(t)||seen[t]||/MATHEMATIQUES|MOYENNE/i.test(t)) return;
-      var row=rowOf(p[0]), moy="";
-      if(prof){ // ligne suivante qui contient le nom de l'enseignant
-        for(var j=idx+1;j<Math.min(L.length,idx+400);j++){ var q=L[j][1];
-          if(q===t) continue; if(nameRe.test(q)&&q.toUpperCase().indexOf(prof.toUpperCase())<0) break;
-          if(q.toUpperCase().indexOf(prof.toUpperCase())>=0){ var n=numsIn(rowOf(L[j][0])); if(n.length){moy=n[n.length-1];break;} } }
-      } else { var n0=numsIn(row); if(n0.length) moy=n0[n0.length-1]; }
-      seen[t]=1; res.push(t+"\t"+moy);
-    });
-    if(!res.length){log("Aucun élève trouvé sur la page. Êtes-vous sur « Appréciations des professeurs du bulletin » ?");return;}
-    var txt=res.join("\n");
-    var done=function(){log(res.length+" élèves lus et copiés. Collez-les dans l'outil (Importer une liste d'élèves).<pre style='white-space:pre-wrap;max-height:120px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");};
+  function students(L,prof){ return L.filter(function(o){return NAME.test(o.t)&&!/MATHEMATIQUES|MOYENNE|CLASSE/i.test(o.t)&&(!prof||o.t.toUpperCase().indexOf(prof)<0);}).sort(function(a,b){return a.r.top-b.r.top;}); }
+  function numOnLine(L,box){
+    var best=null; L.forEach(function(o){ if(!NUM.test(o.t)) return; var cy=(o.r.top+o.r.bottom)/2;
+      if(cy>=box.top-4&&cy<=box.bottom+4&&o.r.left>box.left&&(!best||o.r.left>best.r.left)) best=o; });
+    return best?best.t:"";
+  }
+  function scroller(el){
+    for(var e=el&&el.parentElement;e&&e!==document.body;e=e.parentElement){
+      var cs=getComputedStyle(e); if(/(auto|scroll)/.test(cs.overflowY)&&e.scrollHeight>e.clientHeight+20) return e; }
+    return document.scrollingElement||document.documentElement;
+  }
+  function copy(txt,done){
     (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(done,function(){
       var ta=document.createElement("textarea");ta.value=txt;P.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(e){}ta.remove();done();});
+  }
+  document.getElementById("apx-read").onclick=async function(){
+    var prof=document.getElementById("apx-prof").value.trim().toUpperCase(); try{localStorage.setItem("apx-prof",prof);}catch(e){}
+    var first=students(leaves(),prof)[0];
+    if(!first){log("Aucun élève trouvé sur la page. Êtes-vous sur « Appréciations des professeurs du bulletin » ?");return;}
+    var sc=scroller(first.el), res={}, order=[], guard=0;
+    sc.scrollTop=0; await wait(500);
+    while(guard++<80){
+      var L=leaves(), S=students(L,prof);
+      S.forEach(function(s,i){
+        var nextTop=S[i+1]?S[i+1].r.top:Infinity, moy="";
+        if(prof){
+          var lab=L.filter(function(o){return o.r.top>=s.r.top-2&&o.r.top<nextTop-2&&o.t.toUpperCase().indexOf(prof)>=0&&!NAME.test(o.t);})[0];
+          if(lab) moy=numOnLine(L,lab.r); else if(!S[i+1]) return;
+        } else moy=numOnLine(L,s.r);
+        if(!(s.t in res)) order.push(s.t);
+        if(moy||!res[s.t]) res[s.t]=moy;
+      });
+      log("Lecture… "+order.length+" élèves");
+      var before=sc.scrollTop; sc.scrollTop=before+Math.max(150,sc.clientHeight*0.6); await wait(450);
+      if(sc.scrollTop===before) break;
+    }
+    sc.scrollTop=0;
+    var lines=order.map(function(n){return n+"\t"+(res[n]||"");}), txt=lines.join("\n"), miss=order.filter(function(n){return !res[n];}).length;
+    copy(txt,function(){log(order.length+" élèves lus et copiés"+(miss?" ("+miss+" sans moyenne)":"")+". Collez-les dans l'outil (Importer une liste d'élèves).<pre style='white-space:pre-wrap;max-height:140px;overflow:auto'>"+txt.replace(/</g,"&lt;")+"</pre>");});
   };
-
   function setVal(el,v){
     if(el.isContentEditable){el.focus();el.textContent=v;}
     else{var proto=el.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
-      var d=Object.getOwnPropertyDescriptor(proto,"value");d.set.call(el,v);}
+      Object.getOwnPropertyDescriptor(proto,"value").set.call(el,v);}
     ["input","keyup","change"].forEach(function(t){el.dispatchEvent(new Event(t,{bubbles:true}));});
   }
   function editor(){
     var a=document.activeElement;
-    if(a&&!P.contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&a.type==="text")||a.isContentEditable)) return a;
+    if(a&&!P.contains(a)&&(a.tagName==="TEXTAREA"||(a.tagName==="INPUT"&&/text|search/.test(a.type))||a.isContentEditable)) return a;
     var tas=[].slice.call(document.querySelectorAll("textarea,[contenteditable=true]")).filter(function(x){return !P.contains(x)&&x.offsetParent;});
     return tas.length?tas[tas.length-1]:null;
   }
-  function click(el){ var r=el.getBoundingClientRect(),o={bubbles:true,clientX:r.left+r.width/2,clientY:r.top+Math.min(r.height/2,20)};
-    ["mousedown","mouseup","click"].forEach(function(t){el.dispatchEvent(new MouseEvent(t,o));}); }
-
+  function clickAt(x,y,dbl){
+    P.style.visibility="hidden"; var el=document.elementFromPoint(x,y); P.style.visibility="";
+    if(!el) return null; var o={bubbles:true,cancelable:true,clientX:x,clientY:y,view:window};
+    ["pointerdown","mousedown","pointerup","mouseup","click"].forEach(function(t){el.dispatchEvent(t.indexOf("pointer")===0?new PointerEvent(t,o):new MouseEvent(t,o));});
+    if(dbl) el.dispatchEvent(new MouseEvent("dblclick",o));
+    return el;
+  }
+  async function findStudent(name,sc){
+    var key=norm(name);
+    function look(){return leaves().filter(function(o){return norm(o.t)===key;})[0];}
+    var hit=look(); if(hit) return hit;
+    sc.scrollTop=0; await wait(400);
+    for(var g=0;g<80;g++){ hit=look(); if(hit) return hit;
+      var b=sc.scrollTop; sc.scrollTop=b+Math.max(150,sc.clientHeight*0.6); await wait(350); if(sc.scrollTop===b) break; }
+    return look();
+  }
   document.getElementById("apx-fill").onclick=async function(){
     var lines=document.getElementById("apx-txt").value.split(/\r?\n/).filter(function(l){return l.indexOf("\t")>0;});
     if(!lines.length){log("Collez d'abord les appréciations copiées depuis l'outil.");return;}
-    var L=leaves(), ok=[], ko=[];
+    var prof=document.getElementById("apx-prof").value.trim().toUpperCase();
+    var L0=leaves(), S0=students(L0,prof), ok=[], ko=[];
+    if(!S0.length){log("Aucun élève trouvé sur la page.");return;}
+    var sc=scroller(S0[0].el);
     for(var i=0;i<lines.length;i++){
-      var parts=lines[i].split("\t"), name=parts[0].replace(/^Exemple\s*—\s*/,""), txt=parts.slice(1).join(" ").trim();
-      var hit=L.find(function(p){return norm(p[1])===norm(name);});
+      var parts=lines[i].split("\t"), name=parts[0].replace(/^Exemple\s*—\s*/,"").trim(), txt=parts.slice(1).join(" ").trim();
+      log("Remplissage… "+(i+1)+" / "+lines.length+" : "+name);
+      var hit=await findStudent(name,sc);
       if(!hit){ko.push(name+" (introuvable)");continue;}
-      var row=rowOf(hit[0]); row.scrollIntoView({block:"center"}); await wait(250);
-      var cells=row.querySelectorAll("td,[role=gridcell]"), target=cells.length?cells[cells.length-1]:row;
-      click(target); await wait(450);
-      var ed=editor();
-      if(!ed){ click(target); await wait(600); ed=editor(); }
+      hit.el.scrollIntoView({block:"center"}); await wait(300);
+      var L=leaves(), key=norm(name), again=L.filter(function(o){return norm(o.t)===key;})[0]; if(again) hit=again;
+      var r=hit.el.getBoundingClientRect(), S=students(L,prof), nextTop=Infinity;
+      S.forEach(function(o){ if(o.r.top>r.top+4&&o.r.top<nextTop) nextTop=o.r.top; });
+      var head=L.filter(function(o){return /appr[ée]ciation/i.test(o.t)&&o.r.bottom<=r.top+2;}).pop();
+      var x=head?(head.r.left+head.r.right)/2:r.right+400, ys=[];
+      var addY=function(y){ if(!ys.some(function(v){return Math.abs(v-y)<6;})) ys.push(y); };
+      addY((r.top+r.bottom)/2);
+      if(prof) L.forEach(function(o){ if(o.r.top>=r.top-2&&o.r.top<nextTop-2&&o.t.toUpperCase().indexOf(prof)>=0&&!NAME.test(o.t)) addY((o.r.top+o.r.bottom)/2); });
+      L.forEach(function(o){ if(o.r.top>=r.top-2&&o.r.top<Math.min(nextTop-2,r.top+150)&&o.r.left>r.right) addY((o.r.top+o.r.bottom)/2); });
+      var ed=null;
+      for(var j=0;j<ys.length&&!ed;j++){
+        if(ys[j]<0||ys[j]>innerHeight) continue;
+        clickAt(x,ys[j],false); await wait(450); ed=editor();
+        if(!ed){ clickAt(x,ys[j],true); await wait(600); ed=editor(); }
+      }
       if(!ed){ko.push(name+" (case non trouvée)");continue;}
-      setVal(ed,txt); await wait(150);
-      ed.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",keyCode:9,bubbles:true})); ed.blur&&ed.blur(); await wait(300);
+      setVal(ed,txt); await wait(200);
+      ed.dispatchEvent(new KeyboardEvent("keydown",{key:"Tab",code:"Tab",keyCode:9,which:9,bubbles:true}));
+      await wait(200); if(document.activeElement===ed&&ed.blur) ed.blur(); await wait(300);
       ok.push(name);
-      log("Remplissage… "+ok.length+" / "+lines.length);
     }
-    log("<b>"+ok.length+" appréciation(s) collée(s).</b> Vérifiez puis cliquez sur la disquette de PRONOTE pour enregistrer."+(ko.length?"<br><br>Non remplies :<br>"+ko.join("<br>"):""));
+    log("<b>"+ok.length+" appréciation(s) collée(s).</b> Vérifiez, puis cliquez sur la disquette de PRONOTE pour enregistrer."+(ko.length?"<br><br>Non remplies :<br>"+ko.join("<br>"):""));
   };
 })();</script>
 <script id="engine">
