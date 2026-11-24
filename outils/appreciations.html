@@ -234,24 +234,22 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
 
   <section class="panel">
     <details class="import" id="syncBox">
-      <summary>Sauvegarder mes classes et ma clé (autres ordinateurs)</summary>
+      <summary>Sauvegarde en ligne</summary>
       <div class="import-body">
         <div id="syncOnline">
           <p class="status" id="syncState" style="margin:0 0 8px"></p>
           <div class="field" style="gap:10px">
-            <label class="field"><span>Code de sauvegarde (au moins 10 caractères, à retenir)</span><input type="password" id="syncCode" autocomplete="new-password" placeholder="ex. : une phrase que vous seul connaissez"></label>
+            
             <div class="actions">
               <button class="primary" type="button" id="syncPush">Enregistrer en ligne</button>
-              <button type="button" id="syncPull">Récupérer mes données en ligne</button>
+              <button type="button" id="syncPull" hidden>Récupérer mes données en ligne</button>
               <button type="button" class="ghost" id="syncOff" hidden>Se déconnecter de cet ordinateur</button>
               <button type="button" id="syncLink" hidden>Copier mon lien personnel</button>
+              <input type="hidden" id="syncCode">
             </div>
           </div>
           <div class="help">
-            <p>Vos classes, vos appréciations et vos réglages d'Albert (clé comprise) sont chiffrés dans ce navigateur avec votre code, puis déposés sur votre relais Cloudflare. Personne ne peut les lire sans le code, pas même le relais.</p>
-            <p>Sur un autre ordinateur : ouvrez cette page, tapez le même code et cliquez sur « Récupérer mes données en ligne ». Ensuite, chaque modification est enregistrée automatiquement.</p>
-            <p><strong>Accès direct sur tous vos appareils :</strong> cliquez sur « Copier mon lien personnel » et ajoutez ce lien à vos favoris. Si les favoris de votre navigateur sont synchronisés (compte Google, Apple ou Microsoft), il apparaît aussi sur votre tablette et votre téléphone, et ouvre vos classes sans rien taper. Ce lien contient votre code : ne le partagez avec personne.</p>
-            <p>Attention : un code oublié ne peut pas être retrouvé.</p>
+            <p>Vos classes, vos appréciations et votre clé Albert sont enregistrées automatiquement en ligne, sur votre relais Cloudflare, à chaque modification. Elles s'ouvrent directement sur tous vos appareils (ordinateur, tablette, téléphone), sans code.</p>
           </div>
         </div>
         <div class="actions" style="margin-top:10px">
@@ -1460,7 +1458,7 @@ function albCall(prompt){
 
 /* ---------- sauvegarde : en ligne (chiffrée) et fichier ---------- */
 (function(){
-  var SK="appr-sync-v1", S={code:"",on:false,last:0}, T=null, busy=false;
+  var SK="appr-sync-v1", S={code:"",on:false,last:0}, T=null, busy=false, PULLED=false;
   try{var o=JSON.parse(store().getItem(SK)||(IN_ARTIFACT?null:localStorage.getItem(SK))||"null"); if(o) for(var k in o) S[k]=o[k];}catch(e){}
   function keep(){try{store().setItem(SK,JSON.stringify({code:S.code,on:S.on,last:S.last}));}catch(e){}}
   function st(t){var e=$("syncState"); if(e) e.textContent=t;}
@@ -1493,7 +1491,7 @@ function albCall(prompt){
   function fail(res){ if(res.status===501) return "Le relais n'a pas encore d'espace de sauvegarde (voir les étapes Cloudflare)";
     if(res.status===403) return "Relais non autorisé pour cette page"; if(res.status===413) return "Sauvegarde trop volumineuse"; return "Erreur du relais ("+res.status+")"; }
   function push(){
-    if(!S.on||!S.code||busy) return Promise.resolve();
+    if(!S.on||!S.code||busy||!PULLED) return Promise.resolve();
     busy=true; var data=JSON.stringify(payload());
     return keys(S.code).then(function(k){ var iv=crypto.getRandomValues(new Uint8Array(12));
       return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},k.key,te.encode(data)).then(function(ct){
@@ -1515,7 +1513,7 @@ function albCall(prompt){
   }
   window.__syncSched=function(){ if(!S.on) return; clearTimeout(T); T=setTimeout(push,3000); };
   function myLink(){ return location.origin+location.pathname+"#k="+encodeURIComponent(S.code); }
-  function ui(){ $("syncOff").hidden=!S.on; $("syncLink").hidden=!S.on; $("syncPush").textContent=S.on?"Enregistrer maintenant":"Enregistrer en ligne";
+  function ui(){ $("syncOff").hidden=true; $("syncLink").hidden=true; $("syncPush").textContent=S.on?"Enregistrer maintenant":"Enregistrer en ligne";
     if(!S.on) st("Sauvegarde en ligne inactive sur cet ordinateur."); }
   function codeIn(){ var c=$("syncCode").value; if(c.length<10){toast("Le code doit faire au moins 10 caractères");return null;} return c; }
   var online=!IN_ARTIFACT&&!!(window.crypto&&crypto.subtle);
@@ -1528,19 +1526,21 @@ function albCall(prompt){
     $("syncPush").addEventListener("click",function(){ var c=codeIn(); if(!c) return; S.code=c; S.on=true; keep(); ui(); st("Enregistrement…"); DB.t=DB.t||Date.now(); push(); });
     $("syncPull").addEventListener("click",function(){ var c=codeIn(); if(!c) return; st("Récupération…");
       pull(c).then(function(p){ if(!p){ st("Aucune sauvegarde avec ce code. Cliquez sur « Enregistrer en ligne » pour en créer une."); return; }
-        apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
+        PULLED=true; apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
       .catch(function(e){ st(e.msg||"Récupération impossible"); }); });
     $("syncLink").addEventListener("click",function(){ if(!S.code) return; var l=myLink();
       (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(l):Promise.reject()).then(function(){toast("Lien personnel copié : ajoutez-le à vos favoris");},function(){ prompt("Votre lien personnel :",l); }); });
     $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); try{localStorage.removeItem("appr-code");}catch(e){} ui(); });
     var AUTO="appr-code";
+    /* choix de Dc (2026-11-24) : pas de code, ouverture directe partout ; espace de sauvegarde unique */
+    S.code="appreciations-bulletin|espace-commun-dcottin"; S.on=true; keep(); $("syncCode").value=S.code;
     /* lien personnel : …/appreciations.html#k=<code> ouvre directement les classes (le # n'est jamais envoyé au serveur) */
     try{ var km=location.hash.match(/^#k=([^&]+)/); if(km){ var kc=decodeURIComponent(km[1]); if(kc.length>=10){ S.code=kc; S.on=true; keep(); localStorage.setItem(AUTO,kc); } } }catch(e){}
     try{ if(!S.code){ var ac=localStorage.getItem(AUTO); if(ac){ S.code=ac; S.on=true; } } }catch(e){}
     if(S.on&&S.code){ st("Ouverture de vos classes…");
-      pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); }
+      (function first(){ pull(S.code).then(function(p){ PULLED=true; if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); }
         SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
-      .catch(function(e){ SYNC_READY=true; st(e.msg); });
+      .catch(function(e){ SYNC_READY=true; st(e.msg+" (nouvel essai dans 30 s ; rien n'est envoyé en attendant)"); setTimeout(first,30000); }); })();
     } else {
       /* pas de code connu : on le demande à l'ouverture, puis tout se fait seul */
       var gate=$("gate"), create=null; gate.hidden=false; setTimeout(function(){ try{$("gateCode").focus();}catch(e){} },50);
