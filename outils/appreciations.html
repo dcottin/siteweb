@@ -83,7 +83,8 @@ details.import[open] summary::before{content:"–"}
 .chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
 .chip.se-p{background:color-mix(in srgb,var(--t-E) 16%,var(--surface));border-color:var(--t-E);color:var(--ink)}
 .chip.se-m{background:color-mix(in srgb,var(--t-A) 14%,var(--surface));border-color:var(--t-A);color:var(--ink)}
-.chip b{font-weight:700;margin-right:2px}.se-help{font-size:12px;color:var(--muted);margin:0 0 6px}
+.chip b{font-weight:700;margin-right:2px}
+.btnlike{display:inline-block;cursor:pointer;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13.5px}.se-help{font-size:12px;color:var(--muted);margin:0 0 6px}
 details.pts summary{cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:600}
 details.pts[open] summary{margin-bottom:6px}
 .tone-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--tc)}
@@ -209,6 +210,35 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
           <p>Créez une clé sur <a href="https://albert.playground.etalab.gouv.fr/keys" target="_blank" rel="noopener">albert.playground.etalab.gouv.fr/keys</a>, collez-la ici puis choisissez le modèle.</p>
           <p>Albert reçoit les critères de chaque élève (moyenne, travail, attitude, points à travailler…) mais jamais son nom ni son prénom.</p>
           <p>La clé reste dans ce navigateur. Elle passe par votre relais Cloudflare, qui ne l'enregistre pas.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <details class="import" id="syncBox">
+      <summary>Sauvegarder mes classes et ma clé (autres ordinateurs)</summary>
+      <div class="import-body">
+        <div id="syncOnline">
+          <p class="status" id="syncState" style="margin:0 0 8px"></p>
+          <div class="field" style="gap:10px">
+            <label class="field"><span>Code de sauvegarde (au moins 10 caractères, à retenir)</span><input type="password" id="syncCode" autocomplete="new-password" placeholder="ex. : une phrase que vous seul connaissez"></label>
+            <label class="check" style="padding:0"><input type="checkbox" id="syncRemember" checked> Mémoriser ce code sur cet ordinateur</label>
+            <div class="actions">
+              <button class="primary" type="button" id="syncPush">Enregistrer en ligne</button>
+              <button type="button" id="syncPull">Récupérer mes données en ligne</button>
+              <button type="button" class="ghost" id="syncOff" hidden>Arrêter sur cet ordinateur</button>
+            </div>
+          </div>
+          <div class="help">
+            <p>Vos classes, vos appréciations et vos réglages d'Albert (clé comprise) sont chiffrés dans ce navigateur avec votre code, puis déposés sur votre relais Cloudflare. Personne ne peut les lire sans le code, pas même le relais.</p>
+            <p>Sur un autre ordinateur : ouvrez cette page, tapez le même code et cliquez sur « Récupérer mes données en ligne ». Ensuite, chaque modification est enregistrée automatiquement.</p>
+            <p>Attention : un code oublié ne peut pas être retrouvé.</p>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button type="button" id="fileSave">Télécharger une sauvegarde (fichier)</button>
+          <label><input type="file" id="fileLoad" accept=".json,application/json" hidden><span class="btnlike" id="fileLoadBtn">Restaurer un fichier de sauvegarde</span></label>
         </div>
       </div>
     </details>
@@ -995,7 +1025,9 @@ function load(){
   if(!DB.cur||!DB.classes.some(function(c){return c.id===DB.cur;})) DB.cur=DB.classes[0].id;
 }
 var saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}},250);}
+var SYNC_READY=false;
+function save(){ if(SYNC_READY){DB.t=Date.now(); if(window.__syncSched) window.__syncSched();}
+  clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}},250);}
 function cls(){return DB.classes.find(function(c){return c.id===DB.cur;});}
 function settings(){var c=cls();return {niv:c.niv,mat:c.mat,per:c.per,len:c.len,max:c.max,useName:c.useName};}
 
@@ -1285,7 +1317,7 @@ $("albAll").addEventListener("click",function(){aiWrite(cls().students.slice(),"
 var ALB_KEY="albert-config-v1", IN_ARTIFACT=!!(window.claude&&window.claude.use);
 var ALB={proxy:"https://albert-proxy.cottindylan.workers.dev",key:"",model:"",remember:true,models:[]};
 try{var raw=localStorage.getItem(ALB_KEY); if(raw){var o=JSON.parse(raw); for(var k in o) ALB[k]=o[k];}}catch(e){}
-function albSave(){try{var o={proxy:ALB.proxy,model:ALB.model,remember:ALB.remember,models:ALB.models}; if(ALB.remember) o.key=ALB.key; localStorage.setItem(ALB_KEY,JSON.stringify(o));}catch(e){}}
+function albSave(){ if(window.__syncSched) window.__syncSched(); try{var o={proxy:ALB.proxy,model:ALB.model,remember:ALB.remember,models:ALB.models}; if(ALB.remember) o.key=ALB.key; localStorage.setItem(ALB_KEY,JSON.stringify(o));}catch(e){}}
 function albReady(){return !IN_ARTIFACT&&ALB.proxy&&ALB.key&&ALB.model;}
 function albRefresh(){
   document.body.classList.toggle("has-albert",!!albReady());
@@ -1397,6 +1429,94 @@ function albCall(prompt){
   $("albModel").addEventListener("change",function(){ALB.model=this.value;albSave();albRefresh();});
   $("albLoad").addEventListener("click",function(){ if(!ALB.key){toast("Collez d'abord votre clé API");return;} albModels(); });
   albRefresh();
+})();
+
+
+/* ---------- sauvegarde : en ligne (chiffrée) et fichier ---------- */
+(function(){
+  var SK="appr-sync-v1", S={code:"",on:false,last:0}, T=null, busy=false;
+  try{var o=JSON.parse(localStorage.getItem(SK)||"null"); if(o) for(var k in o) S[k]=o[k];}catch(e){}
+  function keep(){try{localStorage.setItem(SK,JSON.stringify({code:$("syncRemember").checked?S.code:"",on:S.on,last:S.last}));}catch(e){}}
+  function st(t){var e=$("syncState"); if(e) e.textContent=t;}
+  function hhmm(t){var d=new Date(t);return ("0"+d.getHours()).slice(-2)+" h "+("0"+d.getMinutes()).slice(-2);}
+  var te=new TextEncoder();
+  function hex(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ("0"+x.toString(16)).slice(-2);}).join("");}
+  function b64(b){var s="",u=new Uint8Array(b);for(var i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s);}
+  function unb64(s){var t=atob(s),u=new Uint8Array(t.length);for(var i=0;i<t.length;i++)u[i]=t.charCodeAt(i);return u;}
+  var kc={};
+  function keys(code){
+    if(kc[code]) return kc[code];
+    return kc[code]=crypto.subtle.digest("SHA-256",te.encode("appr-sync|"+code)).then(function(h){
+      var id=hex(h);
+      return crypto.subtle.importKey("raw",te.encode(code),"PBKDF2",false,["deriveKey"]).then(function(base){
+        return crypto.subtle.deriveKey({name:"PBKDF2",salt:te.encode("appr-sync-v1|"+id),iterations:150000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+      }).then(function(key){return {id:id,key:key};});
+    });
+  }
+  function payload(){return {v:1,t:DB.t||Date.now(),db:DB,alb:{proxy:ALB.proxy,key:ALB.key,model:ALB.model,models:ALB.models}};}
+  function apply(p){
+    if(!p||!p.db||!p.db.classes) throw {msg:"Sauvegarde illisible"};
+    DB=p.db; if(!DB.cur||!DB.classes.some(function(c){return c.id===DB.cur;})) DB.cur=DB.classes[0].id;
+    if(p.alb){ ["proxy","key","model","models"].forEach(function(k){ if(p.alb[k]) ALB[k]=p.alb[k]; }); ALB.remember=true;
+      try{ $("albProxy").value=ALB.proxy; $("albKeyIn").value=ALB.key; $("albRemember").checked=true; albFillModels(); }catch(e){}
+      try{localStorage.setItem("albert-config-v1",JSON.stringify({proxy:ALB.proxy,key:ALB.key,model:ALB.model,remember:true,models:ALB.models}));}catch(e){} albRefresh(); }
+    try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+    renderSettings(); renderList();
+  }
+  function url(id){return ALB.proxy.replace(/\/+$/,"")+"/sync/"+id;}
+  function fail(res){ if(res.status===501) return "Le relais n'a pas encore d'espace de sauvegarde (voir les étapes Cloudflare)";
+    if(res.status===403) return "Relais non autorisé pour cette page"; if(res.status===413) return "Sauvegarde trop volumineuse"; return "Erreur du relais ("+res.status+")"; }
+  function push(){
+    if(!S.on||!S.code||busy) return Promise.resolve();
+    busy=true; var data=JSON.stringify(payload());
+    return keys(S.code).then(function(k){ var iv=crypto.getRandomValues(new Uint8Array(12));
+      return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},k.key,te.encode(data)).then(function(ct){
+        return fetch(url(k.id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({iv:b64(iv),ct:b64(ct)})});
+      }); })
+    .then(function(res){ if(!res.ok) throw {msg:fail(res)}; S.last=Date.now(); keep(); st("Sauvegarde en ligne active. Dernier enregistrement à "+hhmm(S.last)+"."); },
+          function(e){ throw e&&e.msg?e:{msg:"Relais injoignable : sauvegarde en ligne impossible pour l'instant"}; })
+    .catch(function(e){ st(e.msg); })
+    .then(function(){busy=false;});
+  }
+  function pull(code){
+    return keys(code).then(function(k){
+      return fetch(url(k.id),{cache:"no-store"}).then(function(res){
+        if(res.status===404) return null; if(!res.ok) throw {msg:fail(res)}; return res.json();
+      },function(){ throw {msg:"Relais injoignable : vérifiez l'adresse du relais dans l'encart Albert"}; })
+      .then(function(j){ if(!j) return null;
+        return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(j.iv)},k.key,unb64(j.ct)).then(function(b){return JSON.parse(new TextDecoder().decode(b));},function(){throw {msg:"Code incorrect"};}); });
+    });
+  }
+  window.__syncSched=function(){ if(!S.on) return; clearTimeout(T); T=setTimeout(push,3000); };
+  function ui(){ $("syncOff").hidden=!S.on; $("syncPush").textContent=S.on?"Enregistrer maintenant":"Enregistrer en ligne";
+    if(!S.on) st("Sauvegarde en ligne inactive sur cet ordinateur."); }
+  function codeIn(){ var c=$("syncCode").value; if(c.length<10){toast("Le code doit faire au moins 10 caractères");return null;} return c; }
+  var online=!IN_ARTIFACT&&!!(window.crypto&&crypto.subtle);
+  if(!online){ $("syncOnline").innerHTML='<p class="help" style="margin:0">La sauvegarde en ligne fonctionne sur la version en ligne de l\'outil (<a href="https://dcottin.github.io/siteweb/outils/appreciations.html" target="_blank" rel="noopener">dcottin.github.io/siteweb/outils/appreciations.html</a>). Ici, utilisez le fichier de sauvegarde.</p>'; SYNC_READY=true; }
+  else {
+    $("syncCode").value=S.code||""; ui();
+    $("syncPush").addEventListener("click",function(){ var c=codeIn(); if(!c) return; S.code=c; S.on=true; keep(); ui(); st("Enregistrement…"); DB.t=DB.t||Date.now(); push(); });
+    $("syncPull").addEventListener("click",function(){ var c=codeIn(); if(!c) return; st("Récupération…");
+      pull(c).then(function(p){ if(!p){ st("Aucune sauvegarde avec ce code. Cliquez sur « Enregistrer en ligne » pour en créer une."); return; }
+        apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
+      .catch(function(e){ st(e.msg||"Récupération impossible"); }); });
+    $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); ui(); });
+    $("syncRemember").addEventListener("change",keep);
+    if(S.on&&S.code){ st("Vérification de la sauvegarde en ligne…");
+      pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Dernière version récupérée en ligne"); }
+        SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
+      .catch(function(e){ SYNC_READY=true; st(e.msg); });
+    } else SYNC_READY=true;
+  }
+  /* fichier */
+  $("fileSave").addEventListener("click",function(){
+    var blob=new Blob([JSON.stringify(payload(),null,1)],{type:"application/json"}), a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="appreciations-sauvegarde-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000); toast("Sauvegarde téléchargée (elle contient votre clé Albert : gardez-la pour vous)"); });
+  $("fileLoadBtn").addEventListener("click",function(){$("fileLoad").click();});
+  $("fileLoad").addEventListener("change",function(){ var f=this.files&&this.files[0]; this.value=""; if(!f) return; var rd=new FileReader();
+    rd.onload=function(){ try{ apply(JSON.parse(String(rd.result))); DB.t=Date.now(); save(); toast("Sauvegarde restaurée"); }catch(e){ toast("Ce fichier n'est pas une sauvegarde de l'outil"); } };
+    rd.readAsText(f); });
 })();
 
 /* ---------- favori PRONOTE ---------- */
