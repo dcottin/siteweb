@@ -797,7 +797,7 @@ function toneSet(N,W,C,diff){
 /* contradictions entre le texte et le travail, l'attitude ou la moyenne */
 function incoherent(text,st){
   var W=+st.w, C=+st.c, m=parseFloat(String(st.moy).replace(",",".")), n=0;
-  if(W>=3&&/plus régulier|plus de régularité|bonnes habitudes|investissement plus|se mettre (sérieusement )?au travail|se remettre au travail|sursaut|se ressaisir|rien n'est figé|s'en donner les moyens|réagir|réaction|travail insuffisant|manque de travail|manque d'investissement|ne travaille pas assez|Courage/i.test(text)) n++;
+  if(W>=3&&/plus régulier|plus de régularité|bonnes habitudes|investissement plus|se mettre (sérieusement )?au travail|se remettre au travail|sursaut|se ressaisir|rien n'est figé|s'en donner les moyens|réagir|réaction|travail insuffisant|manque de travail|manque d'investissement|ne travaille pas assez|^Courage|\. Courage/i.test(text)) n++;
   if(C>=3&&/changement d'attitude|bavard|dissip|comportement|distrai|disperse|règles de la classe/i.test(text)) n++;
   if(C>=3&&/trop discret|en retrait|participe peu|participation (trop|encore) (rare|discrète|timide)|n'ose pas/i.test(text)&&C===4) n++;
   if(W<=1&&/continuer ainsi|cette lancée|garder ce rythme|ce niveau est à maintenir|bon départ|belle|avec sérieux|travail sérieux|fait preuve de sérieux|régularité dans le travail|persévérer dans cette voie/i.test(text)) n++;
@@ -871,7 +871,7 @@ var JUSTE_NP={1:["Un début d'année fragile|m","Un premier {per} en demi-teinte
 /* mots trop positifs selon la moyenne : pénalisés dans le choix du texte */
 function tooPositive(text,m){
   if(isNaN(m)) return 0;
-  if(m<11&&/honnête|correct|satisfaisant|encourageant|réussi|bon début|bons résultats|bonne entrée|bien compris|solide/i.test(text)) return 1;
+  if(m<11&&/honnête|correct|satisfaisant|encourageant|réussi|bon début|bons résultats|bonne entrée|bien compris|\bsolide/i.test(text)) return 1;
   if(m<12&&/honnête/i.test(text)) return 1;
   if(m<10&&/bon départ|bonne continuation/i.test(text)) return 1;
   if(m<13&&/très bon|excellent|très satisfaisant|très bien/i.test(text)) return 1;
@@ -933,7 +933,8 @@ function candidate(st,set,A,r){
   if(P>1&&Math.abs(e)===2) out.push(pick(EVO2[e>0?"up":"down"],"ev2"+(e>0?"up":"down")));
   else if(P>1&&e!==0&&r()<.9){
     var key=(e>0?"up":"down")+(posOpen?"AfterPos":"AfterNeg");
-    out.push(pick(B.evo[key],"ev"+key));
+    var evl=W<=1?B.evo[key].filter(function(t){return !/effort|travail|investi|sérieux/i.test(t);}):B.evo[key];
+    out.push(pick(evl.length?evl:B.evo[key],"ev"+key));
   }
   // 3. travail et comportement
   var pts=(st.pts||[]).slice(), userPts=pts.length>0;
@@ -977,7 +978,7 @@ function candidate(st,set,A,r){
   if(ap.length&&(seP.length||pot||r()<.9)){
     ap=ap.slice().sort(function(){return r()-.5;}).slice(0,2);
     var np=ap.join(" et "), forms;
-    forms=ap.length===1?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout.",cap(np)+" porte ses fruits.","{Il} peut compter sur "+np+"."]
+    forms=ap.length===1&&!/^les /.test(np)?["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" est un vrai point d'appui.",cap(np)+" est un atout.",cap(np)+" porte ses fruits.","{Il} peut compter sur "+np+"."]
                        :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" sont de vrais atouts.",cap(np)+" portent leurs fruits.","{Il} peut compter sur "+np+"."];
     var fi=Math.floor(r()*forms.length), apart=["ap:"+fi,forms[fi]];
     var lp=lastPol(out,W,C);
@@ -1040,17 +1041,24 @@ function candidate(st,set,A,r){
   }
   if(beh2&&!(pts.length>1)) out.push(beh2);
   // 6. conclusion
-  if(SU){ var allPos=SUL.every(function(x){return !!x[3];}), sf=SUL.length>1&&P!==3?(allPos?["Il faut {vp}.","Il faudra désormais {vp}."]:["Pour progresser, {il} devra {vp}.","Il faudra désormais {vp}.","{Il} devra maintenant {vp}."]):suiteForms(P,allPos), si=Math.floor(r()*sf.length);
+  if(SU){ var allPos=SUL.every(function(x){return !!x[3];}), sf=SUL.length>1&&P!==3?(allPos?["Il faut {vp}.","Il faudra désormais {vp}."]:["Pour progresser, {il} devra {vp}.","Il faudra désormais {vp}.","{Il} devra {vp}."]):suiteForms(P,allPos), si=Math.floor(r()*sf.length);
     out.push(["su"+SUL.map(function(x){return x[0];}).join("+")+":"+si, sf[si].replace("{vp}",joinList(SUL.map(function(x){return SUL.length>1?SUITE_SHORT[x[0]]||x[2]:x[2];})))]); }
   else if(r()<.7){
     var cl = closeFor(P,T,set.niv);
     /* après une critique, pas de « continuer ainsi » : on garde une conclusion tournée vers le progrès */
-    var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2 || !!st.diff;
+    var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2 || !!st.diff || !!st.abs;
     if(crit){ var CONT=/continuer ainsi|poursuivre sur cette lancée|garder ce rythme|continuer sur cette voie|cette dynamique|même sérieux|très bon départ|il faut continuer|garder cette motivation|encourag/i;
       var cl2=cl.filter(function(t){return !CONT.test(t);});
       if(cl2.length) out.push(pick(cl2,"cl"+P+T)); }
     else out.push(pick(cl,"cl"+P+T));
   }
+  /* trop d'éléments cochés : au-delà de 5 phrases, on retire d'abord le moins important */
+  var DROP=[/^ap:/,/^pot/,/^ev/,/^cl/,/^pt2/,/^se2/,/^ld/];
+  function nS(){return out.filter(function(x){return x[1];}).reduce(function(a,x){return a+(x[1].match(/[.!?](\s|$)/g)||[]).length;},0);}
+  for(var di=0;di<DROP.length&&nS()>5;di++){ for(var j=out.length-1;j>=0;j--){ if(out[j][1]&&DROP[di].test(out[j][0])&&!(DROP[di].source==="^ld"&&!SU)){ out.splice(j,1); break; } } }
+  /* trop long pour le maximum de caractères : même ordre de retrait */
+  var mx=+set.max||9999; function len(){return finish(out.map(function(x){return x[1];}).filter(Boolean).join(" "),st,set).length;}
+  for(var dj=0;dj<DROP.length&&len()>mx;dj++){ for(var j2=out.length-1;j2>=0&&len()>mx;j2--){ if(out[j2][1]&&DROP[dj].test(out[j2][0])&&!(DROP[dj].source==="^ld"&&!SU&&!(st.pts||[]).length)){ out.splice(j2,1); } } }
   return out;
 }
 
@@ -1061,7 +1069,7 @@ function generate(st,set,usage,seed){
     var text=finish(parts.map(function(p){return p[1];}).filter(Boolean).join(" "),st,set);
     var score=Math.abs(text.length-target);
     if(text.length>max) score+=1000+(text.length-max);
-    if(set.useName&&(st.prenom||"").trim()&&text.indexOf(st.prenom.trim())<0) score+=150;
+    if(set.useName&&(st.prenom||"").trim()&&text.indexOf(st.prenom.trim())<0) score+=400;
     parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
     var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{5,}/g)||[]).forEach(function(w){if(/^(toute|faire|cette|leurs|elles|avoir|encore|aussi|toujours|depuis|lors|pendant|notions?|classe|travail|résultats?|mais)$/.test(w))return;var k=w.slice(0,6);if(seen[k])score+=(w.length>=8?18:10);seen[k]=1;});
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
