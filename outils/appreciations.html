@@ -77,9 +77,17 @@ details.import[open] summary::before{content:"–"}
 .name-row input:hover,.name-row input:focus{border-color:var(--line);background:var(--surface-2)}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
-.grid3 select{width:100%}
+.grid3 select,.grid2 select{width:100%}
 .mini{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
+.sld{display:flex;flex-direction:column;gap:2px}
+.sld-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.sld-h b{text-transform:none;letter-spacing:0;color:var(--ink);font-size:13.5px}
+.sld input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0;padding:0;border:0;background:transparent}
+.sld-t{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));font-size:11px;color:var(--muted);line-height:1.2}
+.sld-t span{text-align:center}.sld-t span:first-child{text-align:left}.sld-t span:last-child{text-align:right}
+.sld-t span.on{color:var(--ink);font-weight:600}
+.psub{margin:8px 0 4px;font-size:12.5px}.psub .se-help{display:inline;margin:0}
 .chip{font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
 .chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
 .chip.se-p{background:color-mix(in srgb,var(--t-E) 16%,var(--surface));border-color:var(--t-E);color:var(--ink)}
@@ -121,7 +129,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
   .card .right{border-radius:0 0 var(--r) 0}
   .import-body{grid-template-columns:minmax(0,1fr)}
 }
-@media (max-width:520px){.grid3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:520px){.grid2{grid-template-columns:minmax(0,1fr)}.grid3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -676,7 +684,7 @@ var POINTS = [
  ["redac","Rédaction","soigner la rédaction en justifiant ses réponses"],
  ["methode","Méthodes","appliquer avec plus de rigueur les méthodes vues en cours"],
  ["soin","Inattention","relire ses réponses pour éviter les erreurs d'inattention"],
- ["orga","Organisation","mieux organiser son travail personnel"],
+ ["orga","Organisation du travail","mieux organiser son travail personnel"],
  ["cahier","Tenue du cahier","tenir son cahier avec plus de soin"],
  ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise"],
  ["approf","Approfondir","approfondir ses connaissances pour viser plus haut"],
@@ -1168,14 +1176,24 @@ var CL=["Perturbateur","Bavard, dissipé","Discret, passif","Attentif","Moteur, 
 function opts(list,val){return list.map(function(l,i){return '<option value="'+i+'"'+(+val===i?" selected":"")+">"+l+"</option>";}).join("");}
 function toneOf(st){var o=st.props&&st.props[st.pick];return o?o.tone:analyse(st,settings()).tone;}
 
+var EVOL=["Net recul","En baisse","Stable","En hausse","Net progrès"];
+var PT_IN_SUITE={lecons:1,maison:1,evals:1,bases:1,questions:1,approf:1};
+/* points forts déjà couverts par le curseur Travail */
+var AP_IN_SLIDER={regul:1,serieux:1,efforts:1};
+function slider(f,label,L,v,off,id){
+  return '<div class="sld"><div class="sld-h"><span>'+label+'</span><b data-sl="'+f+'">'+L[v-off]+'</b></div>'+
+    '<input type="range" min="'+off+'" max="'+(off+L.length-1)+'" step="1" value="'+v+'" data-f="'+f+'" id="'+f+'-'+id+'" aria-label="'+label+'" aria-valuetext="'+L[v-off]+'">'+
+    '<div class="sld-t">'+L.map(function(x,i){return '<span'+(i===v-off?' class="on"':'')+'>'+x+'</span>';}).join("")+'</div></div>';
+}
 function cardHTML(st){
   var set=settings(), tone=toneOf(st), ph=analyse(st,set).phase, max=+set.max||0, n=st.txt.length;
   var props=(st.props||[]).map(function(o,i){var on=i===st.pick&&!st.edited&&!st.ai;return '<button type="button" class="prop" data-prop="'+i+'" aria-pressed="'+on+'" style="--tc:var(--t-'+o.tone+')"><span class="tone-tag">'+TONES[o.tone]+(st.props.slice(0,i).some(function(x){return x.tone===o.tone;})?", autre tournure":"")+(on?" · choisie":"")+'</span><span class="ptxt">'+esc(o.text)+'</span></button>';}).join("");
-  var chips=POINTS.filter(function(p){return (!SE_FROM_PTS[p[0]]&&forMat(p,set.mat))||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var chips=POINTS.filter(function(p){return (!SE_FROM_PTS[p[0]]&&!PT_IN_SUITE[p[0]]&&forMat(p,set.mat))||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var appui=st.appui||[];
-  var apchips=APPUIS.filter(function(p){return (!SE_FROM_AP[p[0]]&&forMat(p,set.mat))||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
+  var apchips=APPUIS.filter(function(p){return (!SE_FROM_AP[p[0]]&&!AP_IN_SLIDER[p[0]]&&forMat(p,set.mat))||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var apch=appui.map(function(k){return APMAP[k][1];}).join(", ");
   var chosen=st.pts.map(function(k){return PTMAP[k][1];}).join(", ");
+  var prec=[].concat(SE.filter(function(p){return (st.se||{})[p[0]];}).map(function(p){return ((st.se||{})[p[0]]>0?"+ ":"− ")+p[1];}),appui.map(function(k){return "+ "+APMAP[k][1];}),st.pts.map(function(k){return "− "+PTMAP[k][1];}),st.abs?["absences"]:[],(st.detail||"").trim()?["détail"]:[]).join(", ");
   var se=st.se||{}, seSum=SE.filter(function(p){return se[p[0]];}).map(function(p){return (se[p[0]]>0?"+ ":"− ")+p[1];}).join(", ");
   var sechips=SE.map(function(p){var v=se[p[0]]||0;return '<button type="button" class="chip'+(v>0?" se-p":v<0?" se-m":"")+'" data-se="'+p[0]+'" aria-label="'+esc(p[1])+(v>0?" : point fort":v<0?" : à améliorer":"")+'">'+(v>0?"<b>+</b>":v<0?"<b>−</b>":"")+esc(p[1])+"</button>";}).join("");
   return ''+
@@ -1185,23 +1203,21 @@ function cardHTML(st){
     '<div class="mini">'+
       '<div class="field"><span>Genre</span><div class="seg" data-seg="g"><button type="button" data-v="f" aria-pressed="'+(st.g==="f")+'">F</button><button type="button" data-v="m" aria-pressed="'+(st.g==="m")+'">G</button></div></div>'+
       '<label class="field"><span>Moyenne</span><input type="number" min="0" max="20" step="0.01" data-f="moy" id="m-'+st.id+'" value="'+esc(String(st.moy).replace(",","."))+'" placeholder="—"></label>'+
-      '<div class="field"><span>Évolution</span><div class="seg" data-seg="evo">'+
-        [[-2,"Net recul","⇊"],[-1,"En baisse","↘"],[0,"Stable","="],[1,"En hausse","↗"],[2,"Net progrès","⇈"]].map(function(e){return '<button type="button" data-v="'+e[0]+'" title="'+e[1]+'" aria-label="'+e[1]+'" aria-pressed="'+(+st.evo===e[0])+'"'+(ph===1?" disabled":"")+">"+e[2]+"</button>";}).join("")+
-      '</div></div>'+
-      '<label class="check"><input type="checkbox" data-f="abs"'+(st.abs?" checked":"")+'> Absences</label>'+
     '</div>'+
-    '<div class="grid2">'+
-      '<label class="field"><span>Travail</span><select data-f="w" id="w-'+st.id+'">'+opts(WL,st.w)+'</select></label>'+
-      '<label class="field"><span>Attitude</span><select data-f="c" id="c-'+st.id+'">'+opts(CL,st.c)+'</select></label>'+
-    '</div>'+
+    slider("w","Travail",WL,+st.w,0,st.id)+
+    slider("c","Attitude en classe",CL,+st.c,0,st.id)+
+    (ph===1?"":slider("evo","Progression",EVOL,+st.evo||0,-2,st.id))+
     '<div class="grid2">'+
       '<label class="field"><span>Bilan (1re phrase)</span><select data-f="bilan" id="b-'+st.id+'"><option value="">Auto, selon la moyenne</option>'+BILAN_K.map(function(k){return '<option value="'+k+'"'+(st.bilan===k?" selected":"")+">"+BILAN[k].l+"</option>";}).join("")+'</select></label>'+
       '<label class="field"><span>Pour la suite (dernière phrase)</span><select data-f="suite" id="s-'+st.id+'"><option value="">Auto</option>'+SUITE.map(function(x){return '<option value="'+x[0]+'"'+(st.suite===x[0]?" selected":"")+">"+x[1]+"</option>";}).join("")+'</select></label>'+
     '</div>'+
-    '<details class="pts"'+(st._openS?" open":"")+' data-d="s"><summary>Savoir-être'+(seSum?" : "+esc(seSum):"")+'</summary><p class="se-help">1 clic : point fort (+). 2 clics : à améliorer (−). 3 clics : retirer.</p><div class="chips">'+sechips+'</div></details>'+
-    '<details class="pts"'+(st._openA?" open":"")+' data-d="a"><summary>Points d\'appui'+(apch?" : "+esc(apch):"")+'</summary><div class="chips">'+apchips+'</div></details>'+
-    '<details class="pts"'+(st._open?" open":"")+' data-d="p"><summary>Points à travailler'+(chosen?" : "+esc(chosen):" (choisis automatiquement si vide)")+'</summary><div class="chips">'+chips+'</div></details>'+
-    '<label class="field"><span>Détail observé (facultatif)</span><input type="text" data-f="detail" id="d-'+st.id+'" value="'+esc(st.detail||"")+'" placeholder="ex. : très bon exposé sur le recyclage de l\'acier"></label>'+
+    '<details class="pts"'+(st._openX?" open":"")+' data-d="x"><summary>Précisions (facultatif)'+(prec?" : "+esc(prec):"")+'</summary>'+
+      '<div class="psub"><b>Savoir-être</b> <span class="se-help">1 clic : point fort (+), 2 clics : à améliorer (−), 3 clics : retirer</span></div><div class="chips">'+sechips+'</div>'+
+      '<div class="psub"><b>Points forts</b></div><div class="chips">'+apchips+'</div>'+
+      '<div class="psub"><b>Points à travailler</b> <span class="se-help">choisis automatiquement si rien n\'est coché</span></div><div class="chips">'+chips+'</div>'+
+      '<label class="check" style="margin-top:8px"><input type="checkbox" data-f="abs"'+(st.abs?" checked":"")+'> Absences nombreuses</label>'+
+      '<label class="field" style="margin-top:6px"><span>Détail observé</span><input type="text" data-f="detail" id="d-'+st.id+'" value="'+esc(st.detail||"")+'" placeholder="ex. : très bon exposé sur le recyclage de l\'acier"></label>'+
+    '</details>'+
   '</div>'+
   '<div class="right">'+
     '<div class="foot"><span class="tone-tag">'+TONES[tone]+'</span>'+(st.ai?'<span class="pill ai">Rédigée par '+(st.ai==="albert"?"Albert":"Claude")+'</span>':(st.edited?'<span class="pill">Modifiée à la main</span>':''))+
@@ -1229,7 +1245,7 @@ function renderList(){
 function refreshCard(st,keepFocus){
   var el=document.querySelector('.card[data-id="'+st.id+'"]'); if(!el) return;
   var a=document.activeElement, fid=a&&a.id, ss=a&&a.selectionStart, se=a&&a.selectionEnd;
-  st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open; st._openS=!!(el.querySelector('details[data-d="s"]')||{}).open;
+  st._openX=!!(el.querySelector('details[data-d="x"]')||{}).open;st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open; st._openS=!!(el.querySelector('details[data-d="s"]')||{}).open;
   paintCard(el,st);
   if(keepFocus&&fid){var f=$(fid); if(f){f.focus(); try{if(ss!=null&&f.setSelectionRange) f.setSelectionRange(ss,se);}catch(e){}}}
 }
@@ -1272,6 +1288,7 @@ list.addEventListener("click",function(e){
 });
 list.addEventListener("input",function(e){
   var t=e.target, st=stOf(t); if(!st||!t.dataset.f) return; var f=t.dataset.f;
+  if(t.type==="range"){var L=f==="w"?WL:f==="c"?CL:EVOL,off=f==="evo"?-2:0,lab=t.closest(".sld");lab.querySelector("[data-sl]").textContent=L[+t.value-off];lab.querySelectorAll(".sld-t span").forEach(function(x,i){x.classList.toggle("on",i===+t.value-off);});return;}
   if(f==="detail"){st.detail=t.value;save();return;}
   if(f==="txt"){st.txt=t.value;st.edited=true;st.ai=false;var card=t.closest(".card"),cnt=card.querySelector(".count"),max=+cls().max||0;
     cnt.textContent=t.value.length+(max?" / "+max:"")+" car.";cnt.classList.toggle("over",max&&t.value.length>max);
@@ -1282,7 +1299,7 @@ list.addEventListener("input",function(e){
 });
 list.addEventListener("change",function(e){
   var t=e.target, st=stOf(t); if(!st||!t.dataset.f) return; var f=t.dataset.f;
-  if(f==="w"||f==="c"){st[f]=+t.value;st.ton="auto";}
+  if(f==="w"||f==="c"||f==="evo"){st[f]=+t.value;st.ton="auto";}
   else if(f==="bilan"||f==="suite"){st[f]=t.value;}
   else if(f==="abs"){st.abs=t.checked;}
   else if(f==="detail"){}
