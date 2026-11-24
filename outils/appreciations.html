@@ -739,6 +739,18 @@ function mergeInto(out,conn,part){
   last[1]=last[1].replace(/\.$/,"")+conn+lcFirst(part[1]); out.push([part[0],""]); return true;
 }
 
+/* moyenne tout juste à 10 (9,5 à 11) : ni « correct », ni « honnête », ni « satisfaisant » */
+var JUSTE={1:["Des résultats tout juste moyens pour ce début d'année.","Un début d'année juste, avec des acquis encore fragiles.","Les résultats atteignent tout juste la moyenne en ce début d'année.","Un premier {per} juste, qui reste à consolider.","Les bases sont tout juste en place, et encore fragiles."],
+  2:["Des résultats tout juste moyens ce {per}.","Un {per} juste, avec des acquis encore fragiles.","Les résultats atteignent tout juste la moyenne ce {per}.","Un {per} juste, qui demande à être consolidé."],
+  3:["Une année tout juste moyenne, avec des acquis fragiles.","Le bilan de l'année est juste.","Les résultats de l'année atteignent tout juste la moyenne.","Une année juste, avec des acquis à consolider."]};
+var JUSTE_NP={1:["Un début d'année juste|m","Des résultats tout juste moyens|p"],2:["Un {per} juste|m","Des résultats tout juste moyens|p"],3:["Une année juste|f","Un bilan tout juste moyen|m"]};
+/* mots trop positifs selon la moyenne : pénalisés dans le choix du texte */
+function tooPositive(text,m){
+  if(isNaN(m)) return 0;
+  if(m<11&&/honnête|correct|satisfaisant|encourageant|réussi|bon début|bons résultats|bonne entrée|bien compris|solide/i.test(text)) return 1;
+  if(m<13&&/très bon|excellent|très satisfaisant|très bien/i.test(text)) return 1;
+  return 0;
+}
 function analyse(st,set){
   var W=+st.w, C=+st.c, N=level(st.moy,W);
   var tone = st.ton&&st.ton!=="auto"?st.ton:autoTone(N,W,C);
@@ -775,7 +787,8 @@ function candidate(st,set,A,r){
   else if(N>=4&&W===2&&r()<.6){out.push(pick(B.goodIrregular,"gi"));coversW=true;}
   else if(r()<.45){
     var wp=W>=3, key=N===2?(wp?"mp":"mn"):(N>=3?(wp?"pp":"pn"):(wp?"np":"nn"));
-    var on=B.openNP[P][N], oi=Math.floor(r()*on.length), parts=on[oi].split("|");
+    var mm=parseFloat(String(st.moy).replace(",",".")), juste=N===2&&mm<11;
+    var on=juste?JUSTE_NP[P]:B.openNP[P][N], oi=Math.floor(r()*on.length), parts=on[oi].split("|");
     var lk=LINK[key], li=Math.floor(r()*lk.length), wl=B.work[W].np, wi=Math.floor(r()*wl.length);
     var ag={m:"",f:"e",p:"s"}[parts[1]];
     out.push(["onp"+P+N+":"+oi, parts[0]+lk[li].replace("{a}",ag).replace("{w}",wl[wi])]);
@@ -783,7 +796,7 @@ function candidate(st,set,A,r){
   }
   else {
     /* travail insuffisant ou ton ferme : pas d'ouverture positive (« encourageants », « prometteur »…) */
-    var ol=B.open[P][N];
+    var mj=parseFloat(String(st.moy).replace(",",".")), ol=(N===2&&mj<11)?JUSTE[P]:B.open[P][N];
     if(W<=2||T==="F"||T==="A"){ var POSW=/encourag|prometteu|satisfais|positi|bonne voie|bon départ|rassurant/i, ol2=ol.filter(function(t){return !POSW.test(t);}); if(ol2.length) ol=ol2; }
     out.push(pick(ol,"o"+P+N));
   }
@@ -919,6 +932,7 @@ function generate(st,set,usage,seed){
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
     var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>1) score+=14*(shortN-1); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
     score+=r()*20;
+    if(tooPositive(text,parseFloat(String(st.moy).replace(",",".")))) score+=300;
     if(!best||score<best.score) best={score:score,text:text,ids:parts.map(function(p){return p[0].split(":")[0]+":"+p[0].split(":")[1];})};
   }
   best.tone=A.tone; return best;
@@ -1314,7 +1328,8 @@ function albParams(st,named){
   L.push("Niveau de classe : "+NIVL[set.niv]);
   L.push("Matière : "+(set.mat==="gen"?"appréciation générale du professeur principal":MATL[set.mat]));
   L.push("Période : "+PERL[set.per]);
-  L.push("Résultats : "+RESL[A.N]+(String(st.moy||"").trim()?" (moyenne "+String(st.moy).trim()+"/20, à ne pas citer)":""));
+  var mv=parseFloat(String(st.moy).replace(",","."));
+  L.push("Résultats : "+(A.N===2&&mv<11?"Tout juste moyens":RESL[A.N])+(String(st.moy||"").trim()?" (moyenne "+String(st.moy).trim()+"/20, à ne pas citer)":""));
   L.push("Travail : "+WL[st.w]);
   L.push("Attitude en classe : "+CL[st.c]);
   if(ph>1) L.push("Progression depuis la période précédente : "+PROGL[String(st.evo)]);
@@ -1343,6 +1358,7 @@ function albOne(st){
     "Tu écris en français naturel et sobre, comme un vrai professeur : un seul paragraphe de 2 à 4 phrases bien liées entre elles (et, mais, toutefois, ce qui, afin de…), jamais une suite de phrases courtes et sèches. "+
     "Structure : un constat sur les résultats et le travail, une nuance ou un point d'appui, puis un conseil concret ou une perspective. "+
     "Le texte doit être cohérent avec tous les critères : pas de formule positive si le travail ou les résultats sont insuffisants, pas de « continuez ainsi » après une critique, aucune contradiction ni redite (ne pas dire deux fois la même idée). "+
+    "Le jugement sur les résultats suit la moyenne : en dessous de 8 très insuffisants, de 8 à 10 insuffisants ou fragiles, de 10 à 11 tout juste moyens (jamais corrects, honnêtes ou satisfaisants), de 11 à 12,5 corrects, de 12,5 à 14 assez bons, de 14 à 16 bons, au-delà très bons. "+
     "Le savoir-être, quand il est donné, prime sur l'attitude générale. Adapte le propos à la période (début d'année, progression en milieu d'année, bilan en fin d'année). "+
     "Interdits : superlatifs et emphase (remarquable, brillant, exemplaire…), félicitations, compliments ou encouragements (décisions du conseil de classe), la note chiffrée, les étiquettes sur la personne (paresseux, faible…), le tutoiement, les guillemets, les titres et les listes. "+
     "Tu réponds uniquement par le texte de l'appréciation.";
