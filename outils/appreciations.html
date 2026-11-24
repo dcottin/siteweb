@@ -1492,7 +1492,8 @@ function albCall(prompt){
     if(!S.on) st("Sauvegarde en ligne inactive sur cet ordinateur."); }
   function codeIn(){ var c=$("syncCode").value; if(c.length<10){toast("Le code doit faire au moins 10 caractères");return null;} return c; }
   var online=!IN_ARTIFACT&&!!(window.crypto&&crypto.subtle);
-  if(!online){ $("syncOnline").innerHTML='<p class="help" style="margin:0">La sauvegarde en ligne fonctionne sur la version en ligne de l\'outil (<a href="https://dcottin.github.io/siteweb/outils/appreciations.html" target="_blank" rel="noopener">dcottin.github.io/siteweb/outils/appreciations.html</a>). Ici, utilisez le fichier de sauvegarde.</p>'; SYNC_READY=true; }
+  if(IN_ARTIFACT){ $("syncOnline").innerHTML='<p class="status" id="syncState" style="margin:0 0 6px">Connexion à votre compte Claude…</p><p class="help" style="margin:0">Dans cette version, vos classes et appréciations sont enregistrées automatiquement dans votre compte Claude : vous les retrouvez en ouvrant ce lien depuis n\'importe quel ordinateur. Elles ne sont visibles que par vous. La clé Albert, elle, ne sert que sur la version en ligne de l\'outil.</p>'; cloudClaude(); }
+  else if(!online){ $("syncOnline").innerHTML='<p class="help" style="margin:0">La sauvegarde en ligne demande un navigateur récent. Utilisez le fichier de sauvegarde.</p>'; SYNC_READY=true; }
   else {
     $("syncCode").value=S.code||""; ui();
     $("syncPush").addEventListener("click",function(){ var c=codeIn(); if(!c) return; S.code=c; S.on=true; keep(); ui(); st("Enregistrement…"); DB.t=DB.t||Date.now(); push(); });
@@ -1508,10 +1509,44 @@ function albCall(prompt){
       .catch(function(e){ SYNC_READY=true; st(e.msg); });
     } else SYNC_READY=true;
   }
+  /* version Claude : stockage privé dans le compte (capacité db, dossier personnel data/users/<id>) */
+  function cloudClaude(){
+    var col=null, sent={}, CT=null;
+    function pushAll(){
+      if(!col) return; var tasks=[], ids={};
+      DB.classes.forEach(function(c){ ids["c_"+c.id]=1; var j=JSON.stringify(c); if(sent["c_"+c.id]!==j){ sent["c_"+c.id]=j; tasks.push(col.doc("c_"+c.id).set({c:j})); } });
+      Object.keys(sent).forEach(function(k){ if(/^c_/.test(k)&&!ids[k]){ delete sent[k]; tasks.push(col.doc(k).delete()); } });
+      tasks.push(col.doc("meta").set({t:DB.t||Date.now(),cur:DB.cur,order:DB.classes.map(function(c){return c.id;})}));
+      Promise.all(tasks).then(function(){ st("Enregistré dans votre compte Claude à "+hhmm(Date.now())+"."); },
+        function(e){ st(e&&e.code==="quota_exceeded"?"Espace de sauvegarde plein : supprimez d'anciennes classes.":"Enregistrement dans le compte impossible pour l'instant."); });
+    }
+    window.__syncSched=function(){ clearTimeout(CT); CT=setTimeout(pushAll,2500); };
+    var timer=setTimeout(function(){ if(!col){ SYNC_READY=true; st("Compte Claude injoignable : les données restent dans ce navigateur."); } },10000);
+    window.claude.use("db").then(function(db){
+      if(!db) throw 0;
+      return window.claude.use("user").then(function(user){ return user?user.id():null; }).then(function(id){
+        if(!id) throw 0; var c=db.collection("data/users/"+id);
+        return c.get().then(function(qs){
+          var meta=null, byId={};
+          qs.docs.forEach(function(d){ if(d.id==="meta") meta=d.data(); else if(/^c_/.test(d.id)) byId[d.id]=d.data(); });
+          if(meta&&(meta.t||0)>(DB.t||0)){
+            var classes=(meta.order||[]).map(function(k){ var d=byId["c_"+k]; try{return d&&JSON.parse(d.c);}catch(e){return null;} }).filter(Boolean);
+            if(classes.length){ apply({db:{classes:classes,cur:meta.cur,t:meta.t}}); toast("Classes récupérées depuis votre compte Claude"); }
+          }
+          Object.keys(byId).forEach(function(k){ sent[k]=byId[k].c; });
+          col=c; clearTimeout(timer); SYNC_READY=true;
+          if(!meta||(meta.t||0)<(DB.t||0)) pushAll(); else st("Classes enregistrées dans votre compte Claude. À jour.");
+        });
+      });
+    }).catch(function(){ clearTimeout(timer); SYNC_READY=true; st("Enregistrement dans le compte indisponible ici : les données restent dans ce navigateur."); });
+  }
   /* fichier */
   $("fileSave").addEventListener("click",function(){
-    var blob=new Blob([JSON.stringify(payload(),null,1)],{type:"application/json"}), a=document.createElement("a");
-    a.href=URL.createObjectURL(blob); a.download="appreciations-sauvegarde-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click();
+    var fname="appreciations-sauvegarde-"+new Date().toISOString().slice(0,10)+".json", data=JSON.stringify(payload(),null,1);
+    if(IN_ARTIFACT){ window.claude.use("downloads").then(function(dl){ if(!dl) throw 0; return dl.save({filename:fname,data:data}); })
+      .then(function(){ toast("Sauvegarde téléchargée"); },function(){ toast("Téléchargement impossible ici"); }); return; }
+    var blob=new Blob([data],{type:"application/json"}), a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click();
     setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000); toast("Sauvegarde téléchargée (elle contient votre clé Albert : gardez-la pour vous)"); });
   $("fileLoadBtn").addEventListener("click",function(){$("fileLoad").click();});
   $("fileLoad").addEventListener("change",function(){ var f=this.files&&this.files[0]; this.value=""; if(!f) return; var rd=new FileReader();
