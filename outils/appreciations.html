@@ -697,7 +697,10 @@ var POINTS = [
  ["autonomie","Autonomie","gagner en autonomie face aux exercices"],
  ["materiel","Matériel","apporter son matériel à chaque séance"],
  ["ponct","Ponctualité","arriver à l'heure en cours"],
- ["implic","Implication","s'impliquer davantage dans les activités proposées"]
+ ["implic","Implication","s'impliquer davantage dans les activités proposées"],
+ ["comprend","Compréhension","reprendre les notions qui ne sont pas encore comprises"],
+ ["rapid","Rapidité","travailler plus rapidement"],
+ ["telephone","Téléphone","laisser son téléphone de côté pendant les cours"]
 ];
 /* points d'appui : [clé, libellé, groupe nominal, matières] ; « potentiel » a ses propres phrases */
 var APPUIS = [
@@ -717,7 +720,8 @@ var APPUIS = [
  ["tp","Implication en TP","son implication en TP",LABO],
  ["oral","Participation orale","sa participation à l'oral"],
  ["auto","Autonomie","son autonomie"],
- ["entraide","Entraide","son esprit d'entraide"]
+ ["entraide","Entraide","son esprit d'entraide"],
+ ["interet","Intérêt pour la matière","son intérêt pour la matière"]
 ];
 /* potentiel : phrase choisie selon le travail et les résultats */
 var POT={lazy:["{Il} a des capacités, mais elles restent sous-exploitées faute d'un travail suffisant.","Les capacités sont réelles : il faut maintenant les mettre au service d'un travail plus sérieux.","{Il} a du potentiel, à condition de s'investir davantage."],
@@ -978,6 +982,7 @@ function candidate(st,set,A,r){
   if(st.abs) out.push(pick(B.abs,"ab"));
   // 5. points à travailler
   var SU=SUMAP[st.suite||""];
+  if(SU&&userPts){ var dupK={concentr:"attention",invest:"implic"}[SU[0]]||SU[0]; pts=pts.filter(function(k){return k!==dupK;}); }
   if(SU&&!userPts){ pts=[]; }
   else if(!userPts){
     var auto=[];
@@ -1112,7 +1117,7 @@ function sample(){
     newStudent({name:"Exemple — LEROY Mathis",moy:"13,1",w:1,c:1}),
     newStudent({name:"Exemple — DIALLO Awa",moy:"11,5",w:2,c:3,pts:["lecons","redac"]}),
     newStudent({name:"Exemple — MOREAU Kévin",moy:"5,6",w:0,c:0,abs:true}),
-    newStudent({name:"Exemple — PETIT Inès",moy:"14,2",w:3,c:3,pts:["unites"]})
+    newStudent({name:"Exemple — PETIT Inès",moy:"14,2",w:3,c:3,pts:["soin"]})
   ];
   return {id:uid(),name:"Classe exemple",niv:"1",mat:"ms",per:"T1",len:"190",max:"250",useName:false,students:s};
 }
@@ -1177,9 +1182,9 @@ function opts(list,val){return list.map(function(l,i){return '<option value="'+i
 function toneOf(st){var o=st.props&&st.props[st.pick];return o?o.tone:analyse(st,settings()).tone;}
 
 var EVOL=["Net recul","En baisse","Stable","En hausse","Net progrès"];
-var PT_IN_SUITE={lecons:1,maison:1,evals:1,bases:1,questions:1,approf:1};
-/* points forts déjà couverts par le curseur Travail */
-var AP_IN_SLIDER={regul:1,serieux:1,efforts:1};
+/* puces masquées (gardées pour les anciennes fiches) : jugées inutiles par Dc le 2026-11-24 */
+var PT_IN_SUITE={unites:1,tp:1};
+var AP_IN_SLIDER={tp:1};
 function slider(f,label,L,v,off,id){
   return '<div class="sld"><div class="sld-h"><span>'+label+'</span><b data-sl="'+f+'">'+L[v-off]+'</b></div>'+
     '<input type="range" min="'+off+'" max="'+(off+L.length-1)+'" step="1" value="'+v+'" data-f="'+f+'" id="'+f+'-'+id+'" aria-label="'+label+'" aria-valuetext="'+L[v-off]+'">'+
