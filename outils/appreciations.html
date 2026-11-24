@@ -1124,7 +1124,8 @@ function sample(){
 var DB=null;
 function load(){
   try{var raw=store().getItem(KEY);
-    if(!raw&&!IN_ARTIFACT){ raw=localStorage.getItem(KEY); if(raw) LEGACY=true; }
+    if(!IN_ARTIFACT){ LEGACY=true; var lr=null; try{lr=localStorage.getItem(KEY);}catch(e){}
+      if(lr){ HADLEGACY=true; try{ if(!raw||(JSON.parse(lr).t||0)>(JSON.parse(raw).t||0)) raw=lr; }catch(e){ raw=raw||lr; } } }
     if(raw){DB=JSON.parse(raw);}}catch(e){}
   if(!DB||!DB.classes||!DB.classes.length){DB={classes:[sample()],cur:null};}
   DB.classes.forEach(function(c){c.len={"150":"140","220":"190","320":"280"}[c.len]||c.len;
@@ -1137,8 +1138,9 @@ var saveT=null;
 var SYNC_READY=false;
 /* site : rien n'est gardé durablement dans le navigateur (onglet seulement) ; version Claude : navigateur + compte */
 function store(){ return IN_ARTIFACT?localStorage:sessionStorage; }
-var LEGACY=false; /* anciennes données du navigateur, effacées dès le premier enregistrement en ligne réussi */
-function dropLegacy(){ if(!LEGACY) return; LEGACY=false; try{["appreciations-bulletin-v1","albert-config-v1","appr-sync-v1"].forEach(function(k){localStorage.removeItem(k);});}catch(e){} toast("Copie gardée dans ce navigateur effacée : vos données sont en ligne"); }
+/* copie de secours dans le navigateur tant que la sauvegarde en ligne n'est pas active ; effacée dès qu'elle fonctionne */
+var LEGACY=false, HADLEGACY=false;
+function dropLegacy(){ if(!LEGACY) return; LEGACY=false; try{["appreciations-bulletin-v1","albert-config-v1","appr-sync-v1"].forEach(function(k){localStorage.removeItem(k);});}catch(e){} if(HADLEGACY) toast("Copie gardée dans ce navigateur effacée : vos données sont en ligne"); }
 function save(){ if(SYNC_READY){DB.t=Date.now(); if(window.__syncSched) window.__syncSched();}
   clearTimeout(saveT);saveT=setTimeout(function(){try{var j=JSON.stringify(DB); store().setItem(KEY,j); if(LEGACY) localStorage.setItem(KEY,j);}catch(e){}},250);}
 function cls(){return DB.classes.find(function(c){return c.id===DB.cur;});}
@@ -1653,7 +1655,7 @@ function albCall(prompt){
     try{ var km=location.hash.match(/^#k=([^&]+)/); if(km){ var kc=decodeURIComponent(km[1]); if(kc.length>=10){ S.code=kc; S.on=true; keep(); localStorage.setItem(AUTO,kc); } } }catch(e){}
     try{ if(!S.code){ var ac=localStorage.getItem(AUTO); if(ac){ S.code=ac; S.on=true; } } }catch(e){}
     if(S.on&&S.code){ st("Ouverture de vos classes…");
-      (function first(){ pull(S.code).then(function(p){ PULLED=true; if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); }
+      (function first(){ pull(S.code).then(function(p){ PULLED=true; if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); } if(p&&(p.t||0)>=(DB.t||0)) dropLegacy();
         SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
       .catch(function(e){ SYNC_READY=true; st(e.msg+" (nouvel essai dans 30 s ; rien n'est envoyé en attendant)"); setTimeout(first,30000); }); })();
     } else {
@@ -1806,15 +1808,46 @@ $("importGo").addEventListener("click",function(){
 load();
 DB.classes.forEach(function(c){var u={};c.students.forEach(function(st){if(!st.txt){var save=DB.cur;DB.cur=c.id;regen(st,false);DB.cur=save;}});});
 renderSettings();renderList();save();
+/* plusieurs onglets ouverts : celui qui n'a pas changé se met à jour */
+window.addEventListener("storage",function(e){
+  if(IN_ARTIFACT||e.key!==KEY||!e.newValue) return;
+  try{ var d=JSON.parse(e.newValue); if(!d||!d.classes||(d.t||0)<(DB.t||0)) return;
+    var a=document.activeElement; if(a&&a.closest&&a.closest(".card")&&(a.tagName==="TEXTAREA"||a.type==="text")) return;
+    DB=d; sessionStorage.setItem(KEY,e.newValue); renderSettings(); renderList(); status(); }catch(x){}
+});
 /* liste envoyée par le favori PRONOTE (adresse en #apx=…, jamais transmise au serveur) */
-function importReceived(t,src){
+function importReceived(t,src,tries){
+  /* attendre la récupération des classes en ligne, sinon l'import serait écrasé (ou écraserait tout) */
+  tries=tries||0; if(!SYNC_READY&&tries<60){ setTimeout(function(){importReceived(t,src,tries+1);},500); return; }
   if(!t||!/\t/.test(t)){toast("Rien à importer : lisez d'abord les moyennes dans PRONOTE");return;}
-  $("importTxt").value=t; importScan();
-  if(!parseList(t).length){$("importBox").open=true;toast("Aucun élève reconnu dans la liste reçue");return;}
-  var rep=$("importReplace"), keep=rep.checked; rep.checked=true; $("importGo").click(); rep.checked=keep;
+  var rows=parseList(t);
+  if(!rows.length){$("importTxt").value=t;importScan();$("importBox").open=true;toast("Aucun élève reconnu dans la liste reçue");return;}
+  /* classe visée : celle qui contient le plus d'élèves de la liste */
+  function has(c,r){return c.students.some(function(st){return normName(st.name)===normName(r.name);});}
+  var best=null,bm=0; DB.classes.forEach(function(c){var m=rows.filter(function(r){return has(c,r);}).length; if(m>bm){bm=m;best=c;}});
+  var c;
+  if(best&&bm>=Math.max(1,Math.ceil(rows.length/2))) c=best;
+  else { var cur=cls(); if(!cur.students.length||cur.students.every(function(st){return /^Exemple\s*—/.test(st.name);})) c=cur;
+    else { c={id:uid(),name:"Classe importée de PRONOTE",niv:cur.niv,mat:cur.mat,per:cur.per,len:cur.len,max:cur.max,useName:cur.useName,students:[]}; DB.classes.push(c); } }
+  DB.cur=c.id;
+  /* fusion : on garde les réglages et les textes des élèves déjà présents, on met à jour les moyennes */
+  var old=c.students, list=[], added=0, updated=0;
+  rows.forEach(function(r){
+    var ex=old.find(function(st){return normName(st.name)===normName(r.name);});
+    if(ex){ if(String(ex.moy).replace(",",".")!==String(r.moy).replace(",",".")){ ex.moy=r.moy; updated++; if(!ex.edited&&!ex.ai) regen(ex,false); }
+      if(r.g&&ex.gGuess){ex.g=r.g;ex.gGuess=false;} list.push(ex); }
+    else { var n=newStudent(r); list.push(n); added++; }
+  });
+  var removed=old.filter(function(st){return list.indexOf(st)<0;}).length;
+  c.students=list;
+  list.forEach(function(st){ if(!st.txt) regen(st,false); });
+  save(); renderSettings(); renderList(); status();
+  var msg=[]; if(added) msg.push(added+" ajouté"+(added>1?"s":"")); if(updated) msg.push(updated+" moyenne"+(updated>1?"s":"")+" mise"+(updated>1?"s":"")+" à jour"); if(removed) msg.push(removed+" retiré"+(removed>1?"s":""));
+  toast(c.name+" : "+(msg.length?msg.join(", "):"rien n'a changé"));
   window.scrollTo({top:0,behavior:"smooth"});
 }
 try{ var hm=location.hash.match(/^#apx=(.*)$/); if(hm){ var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); setTimeout(function go(){ var g=$("gate"); if(g&&!g.hidden){ window.__afterGate=go; return; } importReceived(got,"Liste reçue de PRONOTE");},300); } }catch(e){}
+window.addEventListener("hashchange",function(){ var hm=location.hash.match(/^#apx=(.*)$/); if(!hm) return; var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); importReceived(got,"Liste reçue de PRONOTE"); });
 $("importPaste").addEventListener("click",function(){
   if(!navigator.clipboard||!navigator.clipboard.readText){toast("Collez la liste dans la zone avec Ctrl+V");$("importTxt").focus();return;}
   navigator.clipboard.readText().then(function(t){importReceived(t,"Liste collée");},function(){toast("Collez la liste dans la zone avec Ctrl+V");$("importBox").open=true;$("importTxt").focus();});
