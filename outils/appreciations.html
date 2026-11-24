@@ -209,7 +209,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
         <div class="help">
           <p>Créez une clé sur <a href="https://albert.playground.etalab.gouv.fr/keys" target="_blank" rel="noopener">albert.playground.etalab.gouv.fr/keys</a>, collez-la ici puis choisissez le modèle.</p>
           <p>Albert reçoit les critères de chaque élève (moyenne, travail, attitude, points à travailler…) mais jamais son nom ni son prénom.</p>
-          <p>La clé reste dans ce navigateur. Elle passe par votre relais Cloudflare, qui ne l'enregistre pas.</p>
+          <p>La clé n'est gardée que le temps de l'onglet, et dans votre sauvegarde en ligne chiffrée (encart « Sauvegarder mes classes et ma clé »). Elle passe par votre relais Cloudflare, qui ne la lit pas.</p>
         </div>
       </div>
     </details>
@@ -223,7 +223,6 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
           <p class="status" id="syncState" style="margin:0 0 8px"></p>
           <div class="field" style="gap:10px">
             <label class="field"><span>Code de sauvegarde (au moins 10 caractères, à retenir)</span><input type="password" id="syncCode" autocomplete="new-password" placeholder="ex. : une phrase que vous seul connaissez"></label>
-            <label class="check" style="padding:0"><input type="checkbox" id="syncRemember" checked> Mémoriser ce code sur cet ordinateur</label>
             <div class="actions">
               <button class="primary" type="button" id="syncPush">Enregistrer en ligne</button>
               <button type="button" id="syncPull">Récupérer mes données en ligne</button>
@@ -233,6 +232,7 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
           <div class="help">
             <p>Vos classes, vos appréciations et vos réglages d'Albert (clé comprise) sont chiffrés dans ce navigateur avec votre code, puis déposés sur votre relais Cloudflare. Personne ne peut les lire sans le code, pas même le relais.</p>
             <p>Sur un autre ordinateur : ouvrez cette page, tapez le même code et cliquez sur « Récupérer mes données en ligne ». Ensuite, chaque modification est enregistrée automatiquement.</p>
+            <p>Rien n'est conservé dans ce navigateur : à chaque nouvelle ouverture de la page, tapez votre code et cliquez sur « Récupérer mes données en ligne ». C'est adapté aux ordinateurs partagés du lycée.</p>
             <p>Attention : un code oublié ne peut pas être retrouvé.</p>
           </div>
         </div>
@@ -1016,7 +1016,9 @@ function sample(){
 }
 var DB=null;
 function load(){
-  try{var raw=localStorage.getItem(KEY); if(raw){DB=JSON.parse(raw);}}catch(e){}
+  try{var raw=store().getItem(KEY);
+    if(!raw&&!IN_ARTIFACT){ raw=localStorage.getItem(KEY); if(raw) LEGACY=true; }
+    if(raw){DB=JSON.parse(raw);}}catch(e){}
   if(!DB||!DB.classes||!DB.classes.length){DB={classes:[sample()],cur:null};}
   DB.classes.forEach(function(c){c.len={"150":"140","220":"190","320":"280"}[c.len]||c.len;
     c.students.forEach(function(st){ if(st.se) return; st.se={};
@@ -1026,8 +1028,12 @@ function load(){
 }
 var saveT=null;
 var SYNC_READY=false;
+/* site : rien n'est gardé durablement dans le navigateur (onglet seulement) ; version Claude : navigateur + compte */
+function store(){ return IN_ARTIFACT?localStorage:sessionStorage; }
+var LEGACY=false; /* anciennes données du navigateur, effacées dès le premier enregistrement en ligne réussi */
+function dropLegacy(){ if(!LEGACY) return; LEGACY=false; try{["appreciations-bulletin-v1","albert-config-v1","appr-sync-v1"].forEach(function(k){localStorage.removeItem(k);});}catch(e){} toast("Copie gardée dans ce navigateur effacée : vos données sont en ligne"); }
 function save(){ if(SYNC_READY){DB.t=Date.now(); if(window.__syncSched) window.__syncSched();}
-  clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}},250);}
+  clearTimeout(saveT);saveT=setTimeout(function(){try{var j=JSON.stringify(DB); store().setItem(KEY,j); if(LEGACY) localStorage.setItem(KEY,j);}catch(e){}},250);}
 function cls(){return DB.classes.find(function(c){return c.id===DB.cur;});}
 function settings(){var c=cls();return {niv:c.niv,mat:c.mat,per:c.per,len:c.len,max:c.max,useName:c.useName};}
 
@@ -1316,8 +1322,10 @@ $("albAll").addEventListener("click",function(){aiWrite(cls().students.slice(),"
 /* ---------- rédaction par Albert (API Etalab, via le relais Cloudflare) ---------- */
 var ALB_KEY="albert-config-v1", IN_ARTIFACT=!!(window.claude&&window.claude.use);
 var ALB={proxy:"https://albert-proxy.cottindylan.workers.dev",key:"",model:"",remember:true,models:[]};
-try{var raw=localStorage.getItem(ALB_KEY); if(raw){var o=JSON.parse(raw); for(var k in o) ALB[k]=o[k];}}catch(e){}
-function albSave(){ if(window.__syncSched) window.__syncSched(); try{var o={proxy:ALB.proxy,model:ALB.model,remember:ALB.remember,models:ALB.models}; if(ALB.remember) o.key=ALB.key; localStorage.setItem(ALB_KEY,JSON.stringify(o));}catch(e){}}
+try{var raw=(IN_ARTIFACT?localStorage:sessionStorage).getItem(ALB_KEY)||(IN_ARTIFACT?null:localStorage.getItem(ALB_KEY)); if(raw){var o=JSON.parse(raw); for(var k in o) ALB[k]=o[k];}}catch(e){}
+function albSave(){ if(window.__syncSched) window.__syncSched(); try{var o={proxy:ALB.proxy,model:ALB.model,remember:ALB.remember,models:ALB.models,key:ALB.key};
+  if(IN_ARTIFACT){ if(!ALB.remember) delete o.key; localStorage.setItem(ALB_KEY,JSON.stringify(o)); }
+  else { sessionStorage.setItem(ALB_KEY,JSON.stringify(o)); if(LEGACY) localStorage.setItem(ALB_KEY,JSON.stringify(o)); } }catch(e){}}
 function albReady(){return !IN_ARTIFACT&&ALB.proxy&&ALB.key&&ALB.model;}
 function albRefresh(){
   document.body.classList.toggle("has-albert",!!albReady());
@@ -1422,7 +1430,7 @@ function albCall(prompt){
 (function(){
   var box=$("albertBox"); if(!box) return;
   if(IN_ARTIFACT){ $("albForm").hidden=true; $("albArtifact").hidden=false; return; }
-  $("albProxy").value=ALB.proxy; $("albKeyIn").value=ALB.key; $("albRemember").checked=!!ALB.remember; albFillModels();
+  $("albProxy").value=ALB.proxy; $("albKeyIn").value=ALB.key; $("albRemember").checked=!!ALB.remember; $("albRemember").parentNode.hidden=true; albFillModels();
   $("albProxy").addEventListener("change",function(){ALB.proxy=this.value.trim();albSave();albRefresh();});
   $("albKeyIn").addEventListener("change",function(){ALB.key=this.value.trim();albSave();albRefresh(); if(ALB.key&&!ALB.models.length) albModels();});
   $("albRemember").addEventListener("change",function(){ALB.remember=this.checked;albSave();});
@@ -1435,8 +1443,8 @@ function albCall(prompt){
 /* ---------- sauvegarde : en ligne (chiffrée) et fichier ---------- */
 (function(){
   var SK="appr-sync-v1", S={code:"",on:false,last:0}, T=null, busy=false;
-  try{var o=JSON.parse(localStorage.getItem(SK)||"null"); if(o) for(var k in o) S[k]=o[k];}catch(e){}
-  function keep(){try{localStorage.setItem(SK,JSON.stringify({code:$("syncRemember").checked?S.code:"",on:S.on,last:S.last}));}catch(e){}}
+  try{var o=JSON.parse(store().getItem(SK)||(IN_ARTIFACT?null:localStorage.getItem(SK))||"null"); if(o) for(var k in o) S[k]=o[k];}catch(e){}
+  function keep(){try{store().setItem(SK,JSON.stringify({code:S.code,on:S.on,last:S.last}));}catch(e){}}
   function st(t){var e=$("syncState"); if(e) e.textContent=t;}
   function hhmm(t){var d=new Date(t);return ("0"+d.getHours()).slice(-2)+" h "+("0"+d.getMinutes()).slice(-2);}
   var te=new TextEncoder();
@@ -1459,8 +1467,8 @@ function albCall(prompt){
     DB=p.db; if(!DB.cur||!DB.classes.some(function(c){return c.id===DB.cur;})) DB.cur=DB.classes[0].id;
     if(p.alb){ ["proxy","key","model","models"].forEach(function(k){ if(p.alb[k]) ALB[k]=p.alb[k]; }); ALB.remember=true;
       try{ $("albProxy").value=ALB.proxy; $("albKeyIn").value=ALB.key; $("albRemember").checked=true; albFillModels(); }catch(e){}
-      try{localStorage.setItem("albert-config-v1",JSON.stringify({proxy:ALB.proxy,key:ALB.key,model:ALB.model,remember:true,models:ALB.models}));}catch(e){} albRefresh(); }
-    try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}
+      albSave(); albRefresh(); }
+    try{store().setItem(KEY,JSON.stringify(DB));}catch(e){}
     renderSettings(); renderList();
   }
   function url(id){return ALB.proxy.replace(/\/+$/,"")+"/sync/"+id;}
@@ -1473,7 +1481,7 @@ function albCall(prompt){
       return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},k.key,te.encode(data)).then(function(ct){
         return fetch(url(k.id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({iv:b64(iv),ct:b64(ct)})});
       }); })
-    .then(function(res){ if(!res.ok) throw {msg:fail(res)}; S.last=Date.now(); keep(); st("Sauvegarde en ligne active. Dernier enregistrement à "+hhmm(S.last)+"."); },
+    .then(function(res){ if(!res.ok) throw {msg:fail(res)}; S.last=Date.now(); keep(); dropLegacy(); st("Sauvegarde en ligne active. Dernier enregistrement à "+hhmm(S.last)+"."); },
           function(e){ throw e&&e.msg?e:{msg:"Relais injoignable : sauvegarde en ligne impossible pour l'instant"}; })
     .catch(function(e){ st(e.msg); })
     .then(function(){busy=false;});
@@ -1496,13 +1504,14 @@ function albCall(prompt){
   else if(!online){ $("syncOnline").innerHTML='<p class="help" style="margin:0">La sauvegarde en ligne demande un navigateur récent. Utilisez le fichier de sauvegarde.</p>'; SYNC_READY=true; }
   else {
     $("syncCode").value=S.code||""; ui();
+    setTimeout(function(){ if(LEGACY&&!S.on) st("Vos classes sont encore gardées dans ce navigateur. Elles en seront effacées dès le premier enregistrement en ligne réussi."); },0);
+    if(!S.on){ var sb=$("syncBox"); if(sb) sb.open=true; }
     $("syncPush").addEventListener("click",function(){ var c=codeIn(); if(!c) return; S.code=c; S.on=true; keep(); ui(); st("Enregistrement…"); DB.t=DB.t||Date.now(); push(); });
     $("syncPull").addEventListener("click",function(){ var c=codeIn(); if(!c) return; st("Récupération…");
       pull(c).then(function(p){ if(!p){ st("Aucune sauvegarde avec ce code. Cliquez sur « Enregistrer en ligne » pour en créer une."); return; }
         apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
       .catch(function(e){ st(e.msg||"Récupération impossible"); }); });
     $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); ui(); });
-    $("syncRemember").addEventListener("change",keep);
     if(S.on&&S.code){ st("Vérification de la sauvegarde en ligne…");
       pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Dernière version récupérée en ligne"); }
         SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
