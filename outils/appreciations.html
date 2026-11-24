@@ -76,6 +76,7 @@ details.import[open] summary::before{content:"–"}
 .name-row input{flex:1;font-weight:600;background:transparent;border-color:transparent;padding-left:4px;font-size:15px}
 .name-row input:hover,.name-row input:focus{border-color:var(--line);background:var(--surface-2)}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
 .grid3 select{width:100%}
 .mini{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
@@ -785,6 +786,41 @@ function mergeInto(out,conn,part){
   last[1]=last[1].replace(/\.$/,"")+conn+lcFirst(part[1]); out.push([part[0],""]); return true;
 }
 
+/* bilan choisi par l'enseignant (première phrase) */
+var BILAN={
+ exc:{l:"Excellent",pos:1,p:{1:["Excellent début d'année.","Excellent premier {per}."],2:["Excellent {per}."],3:["Excellente année.","Excellent bilan."]}},
+ tb:{l:"Très bon",pos:1,p:{1:["Très bon début d'année.","Très bon premier {per}."],2:["Très bon {per}."],3:["Très bonne année.","Très bon bilan."]}},
+ bon:{l:"Bon",pos:1,p:{1:["Bon début d'année.","Bon premier {per}."],2:["Bon {per}."],3:["Bonne année.","Bon bilan."]}},
+ ab:{l:"Assez bon",pos:1,p:{1:["Assez bon début d'année.","Assez bon premier {per}."],2:["Assez bon {per}."],3:["Assez bonne année.","Bilan assez satisfaisant."]}},
+ cor:{l:"Correct",pos:1,p:{1:["Début d'année correct.","Premier {per} correct."],2:["{Per} correct."],3:["Année correcte.","Bilan correct."]}},
+ enc:{l:"Encourageant",pos:1,p:{1:["Début d'année encourageant.","Premier {per} encourageant."],2:["{Per} encourageant.","Des progrès encourageants ce {per}."],3:["Année encourageante.","Bilan encourageant."]}},
+ frag:{l:"Fragile, un peu juste",pos:0,p:{1:["Début d'année fragile.","Premier {per} un peu juste."],2:["{Per} fragile.","Résultats encore justes ce {per}."],3:["Année fragile.","Bilan un peu juste."]}},
+ dec:{l:"Décevant",pos:0,p:{1:["Début d'année décevant.","Premier {per} décevant."],2:["{Per} décevant."],3:["Année décevante.","Bilan décevant."]}},
+ ins:{l:"Insuffisant",pos:0,p:{1:["Début d'année insuffisant.","Premier {per} insuffisant."],2:["{Per} insuffisant."],3:["Année insuffisante.","Bilan insuffisant."]}},
+ tins:{l:"Très insuffisant",pos:0,p:{1:["Début d'année très insuffisant."],2:["{Per} très insuffisant."],3:["Année très insuffisante.","Bilan très insuffisant."]}}
+};
+var BILAN_K=["exc","tb","bon","ab","cor","enc","frag","dec","ins","tins"];
+/* objectif pour la suite (dernière phrase) : [clé, libellé, verbe, positif] */
+var SUITE=[
+ ["concentr","Se concentrer davantage en classe","se concentrer davantage en classe",0],
+ ["maison","Retravailler les notions à la maison","retravailler les notions à la maison",0],
+ ["lecons","Apprendre ses leçons régulièrement","apprendre ses leçons plus régulièrement",0],
+ ["regul","Travailler plus régulièrement","travailler plus régulièrement",0],
+ ["invest","S'investir davantage","s'investir davantage",0],
+ ["oral","Participer davantage","participer davantage à l'oral",0],
+ ["bases","Consolider les bases","consolider les bases",0],
+ ["evals","Préparer les évaluations","préparer plus sérieusement les évaluations",0],
+ ["questions","Poser des questions","poser des questions dès qu'une notion n'est pas comprise",0],
+ ["confiance","Prendre confiance en soi","prendre confiance en [lui|elle]",0],
+ ["efforts","Poursuivre les efforts","poursuivre ses efforts",1],
+ ["maintenir","Maintenir ce niveau","maintenir ce niveau",1],
+ ["viser","Viser plus haut","viser encore plus haut",1]
+];
+var SUMAP={}; SUITE.forEach(function(x){SUMAP[x[0]]=x;});
+function suiteForms(P,pos){
+  if(P===3) return pos?["Il faudra {vp} l'an prochain.","L'an prochain, il faudra {vp}."]:["Il faudra {vp} l'an prochain.","L'an prochain, {il} devra {vp}."];
+  return pos?["Il faut {vp}.","Il faudra {vp} au prochain {per}."]:["Il faudra {vp} pour progresser au prochain {per}.","Pour progresser au prochain {per}, {il} devra {vp}.","{Il} devra {vp} pour progresser."];
+}
 /* moyenne tout juste à 10 (9,5 à 11) : ni « correct », ni « honnête », ni « satisfaisant » */
 var JUSTE={1:["Un début d'année fragile, avec des résultats qui peinent à dépasser la moyenne.","Les résultats se situent autour de la moyenne, mais restent fragiles.","Des résultats encore fragiles en ce début d'année.","Un premier {per} en demi-teinte, avec des acquis encore fragiles.","Les résultats sont justes en ce début d'année.","Des résultats un peu justes pour ce premier {per}.","Les résultats restent justes, et les acquis sont à consolider.","Un début d'année un peu juste.","Des résultats limites pour ce début d'année.","Les résultats de ce premier {per} sont encore trop justes."],
   2:["Un {per} fragile, avec des résultats qui peinent à dépasser la moyenne.","Les résultats se situent autour de la moyenne, mais restent fragiles.","Des résultats encore fragiles ce {per}.","Un {per} en demi-teinte, avec des acquis encore fragiles.","Les résultats sont justes ce {per}.","Des résultats un peu justes ce {per}.","Les résultats restent justes, et les acquis sont à consolider.","Un {per} un peu juste.","Des résultats limites ce {per}."],
@@ -794,6 +830,8 @@ var JUSTE_NP={1:["Un début d'année fragile|m","Un premier {per} en demi-teinte
 function tooPositive(text,m){
   if(isNaN(m)) return 0;
   if(m<11&&/honnête|correct|satisfaisant|encourageant|réussi|bon début|bons résultats|bonne entrée|bien compris|solide/i.test(text)) return 1;
+  if(m<12&&/honnête/i.test(text)) return 1;
+  if(m<10&&/bon départ|bonne continuation/i.test(text)) return 1;
   if(m<13&&/très bon|excellent|très satisfaisant|très bien/i.test(text)) return 1;
   return 0;
 }
@@ -827,8 +865,9 @@ function candidate(st,set,A,r){
     var k=ok[Math.floor(r()*ok.length)]; return [id+":"+k, txt(list[k])];
   }
   // 1. ouverture
-  var coversW=false, posOpen=N>=3;
-  if(N<=1&&W>=3&&r()<.65){out.push(pick(B.effortsNoResults,"enr"));coversW=true;posOpen=false;}
+  var coversW=false, posOpen=N>=3, BI=BILAN[st.bilan||""];
+  if(BI){ out.push(pick(BI.p[P],"bi"+st.bilan)); posOpen=!!BI.pos; }
+  else if(N<=1&&W>=3&&r()<.65){out.push(pick(B.effortsNoResults,"enr"));coversW=true;posOpen=false;}
   else if(N>=3&&W<=1&&r()<.65){out.push(pick(B.resultsNoWork,"rnw"));coversW=true;posOpen=false;}
   else if(N>=4&&W===2&&r()<.6){out.push(pick(B.goodIrregular,"gi"));coversW=true;}
   else if(r()<.45){
@@ -875,7 +914,7 @@ function candidate(st,set,A,r){
   } else {
     out.push(pick(B.work[W].s,"ws"+W));
     if(showC){ var cpart=pick(B.conduct[C].s,"cs"+C);
-      if(r()<.7) mergeInto(out,(W>=3)===(C>=3)?", et ":", mais ",cpart); else out.push(cpart); }
+      if((W>=3)!==(C>=3)&&r()<.75) mergeInto(out,", mais ",cpart); else out.push(cpart); }
   }
   // évite la redite entre la phrase de comportement et les points
   if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
@@ -899,14 +938,16 @@ function candidate(st,set,A,r){
                        :["{Il} peut s'appuyer sur "+np+".","On peut souligner "+np+".",cap(np)+" sont de vrais atouts.",cap(np)+" portent leurs fruits.","{Il} peut compter sur "+np+"."];
     var fi=Math.floor(r()*forms.length), apart=["ap:"+fi,forms[fi]];
     var lp=lastPol(out,W,C);
-    if(fi<2&&lp!==null&&r()<.6) mergeInto(out,lp?", et ":", mais ",apart); else out.push(apart);
+    if(fi<2&&lp===false&&r()<.6) mergeInto(out,", mais ",apart); else out.push(apart);
   }
   var det=(st.detail||"").trim();
   if(det){det=cap(det); if(!/[.!?]$/.test(det)) det+="."; out.push(["det:0",det]);}
   // 4. absences
   if(st.abs) out.push(pick(B.abs,"ab"));
   // 5. points à travailler
-  if(!userPts){
+  var SU=SUMAP[st.suite||""];
+  if(SU&&!userPts){ pts=[]; }
+  else if(!userPts){
     var auto=[];
     if(W<=1) auto.push("lecons","maison"); else if(W===2) auto.push("lecons","evals");
     if(C===1&&!showC) auto.push("bavard"); if(C===2&&!showC) auto.push("oral");
@@ -954,7 +995,8 @@ function candidate(st,set,A,r){
   }
   if(beh2&&!(pts.length>1)) out.push(beh2);
   // 6. conclusion
-  if(r()<.7){
+  if(SU){ var sf=suiteForms(P,!!SU[3]), si=Math.floor(r()*sf.length); out.push(["su"+SU[0]+":"+si, sf[si].replace("{vp}",SU[2])]); }
+  else if(r()<.7){
     var cl = closeFor(P,T,set.niv);
     /* après une critique, pas de « continuer ainsi » : on garde une conclusion tournée vers le progrès */
     var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2;
@@ -977,9 +1019,10 @@ function generate(st,set,usage,seed){
     parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
     var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){if(seen[w])score+=9;seen[w]=1;});
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
-    var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>1) score+=14*(shortN-1); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
+    var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>2) score+=8*(shortN-2); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
     score+=r()*20;
-    if(tooPositive(text,parseFloat(String(st.moy).replace(",",".")))) score+=300;
+    var nEt=(text.match(/\bet\b/g)||[]).length; if(nEt>1) score+=22*(nEt-1);
+    if(!st.bilan&&tooPositive(text,parseFloat(String(st.moy).replace(",",".")))) score+=300;
     if(!best||score<best.score) best={score:score,text:text,ids:parts.map(function(p){return p[0].split(":")[0]+":"+p[0].split(":")[1];})};
   }
   best.tone=A.tone; return best;
@@ -1017,7 +1060,7 @@ function newStudent(o){
   o=o||{};
   var full=o.name||"Nouvel élève", sp=splitName(full);
   var g=o.g||guessG(sp.prenom);
-  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],se:o.se||{},detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
+  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],se:o.se||{},bilan:o.bilan||"",suite:o.suite||"",detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
 }
 function sample(){
   var s=[
@@ -1113,6 +1156,10 @@ function cardHTML(st){
       '<label class="field"><span>Attitude</span><select data-f="c" id="c-'+st.id+'">'+opts(CL,st.c)+'</select></label>'+
       '<label class="field"><span>Ton</span><select data-f="ton" id="t-'+st.id+'">'+tsel+'</select></label>'+
     '</div>'+
+    '<div class="grid2">'+
+      '<label class="field"><span>Bilan (1re phrase)</span><select data-f="bilan" id="b-'+st.id+'"><option value="">Auto, selon la moyenne</option>'+BILAN_K.map(function(k){return '<option value="'+k+'"'+(st.bilan===k?" selected":"")+">"+BILAN[k].l+"</option>";}).join("")+'</select></label>'+
+      '<label class="field"><span>Pour la suite (dernière phrase)</span><select data-f="suite" id="s-'+st.id+'"><option value="">Auto</option>'+SUITE.map(function(x){return '<option value="'+x[0]+'"'+(st.suite===x[0]?" selected":"")+">"+x[1]+"</option>";}).join("")+'</select></label>'+
+    '</div>'+
     '<details class="pts"'+(st._openS?" open":"")+' data-d="s"><summary>Savoir-être'+(seSum?" : "+esc(seSum):"")+'</summary><p class="se-help">1 clic : point fort (+). 2 clics : à améliorer (−). 3 clics : retirer.</p><div class="chips">'+sechips+'</div></details>'+
     '<details class="pts"'+(st._openA?" open":"")+' data-d="a"><summary>Points d\'appui'+(apch?" : "+esc(apch):"")+'</summary><div class="chips">'+apchips+'</div></details>'+
     '<details class="pts"'+(st._open?" open":"")+' data-d="p"><summary>Points à travailler'+(chosen?" : "+esc(chosen):" (choisis automatiquement si vide)")+'</summary><div class="chips">'+chips+'</div></details>'+
@@ -1195,6 +1242,7 @@ list.addEventListener("input",function(e){
 list.addEventListener("change",function(e){
   var t=e.target, st=stOf(t); if(!st||!t.dataset.f) return; var f=t.dataset.f;
   if(f==="w"||f==="c"||f==="ton"){st[f]=f==="ton"?t.value:+t.value;}
+  else if(f==="bilan"||f==="suite"){st[f]=t.value;}
   else if(f==="abs"){st.abs=t.checked;}
   else if(f==="detail"){}
   else if(f==="name"){if(cls().useName&&!st.edited){regen(st,false);refreshCard(st);}save();return;}
@@ -1263,6 +1311,8 @@ function profile(st,i){
   if(st.abs) o.absences="nombreuses absences";
   if((st.appui||[]).length) o.points_d_appui=st.appui.map(function(k){return APMAP[k][1];});
   if(st.pts.length) o.a_travailler=st.pts.map(function(k){return PTMAP[k][1];});
+  if(BILAN[st.bilan||""]) o.bilan_premiere_phrase=BILAN[st.bilan].l;
+  if(SUMAP[st.suite||""]) o.objectif_derniere_phrase=SUMAP[st.suite][1];
   var sev=st.se||{}, sp=SE.filter(function(p){return sev[p[0]]>0;}).map(function(p){return p[1];}), sm=SE.filter(function(p){return sev[p[0]]<0;}).map(function(p){return p[1];});
   if(sp.length) o.savoir_etre_points_forts=sp; if(sm.length) o.savoir_etre_a_ameliorer=sm;
   if((st.detail||"").trim()) o.detail_observe=mask(st.detail,st);
@@ -1390,6 +1440,8 @@ function albParams(st,named){
   L.push("Travail : "+WL[st.w]);
   L.push("Attitude en classe : "+CL[st.c]);
   if(ph>1) L.push("Progression depuis la période précédente : "+PROGL[String(st.evo)]);
+  if(BILAN[st.bilan||""]) L.push("Bilan choisi par le professeur (à dire dès la première phrase) : "+BILAN[st.bilan].l.toLowerCase());
+  if(SUMAP[st.suite||""]) L.push("Objectif pour la suite (dernière phrase) : "+SUMAP[st.suite][2].replace(/\[([^|\]]*)\|([^\]]*)\]/,st.g==="f"?"$2":"$1"));
   var sev=st.se||{}, sp=SE.filter(function(p){return sev[p[0]]>0;}).map(function(p){return p[1].toLowerCase();}), sm=SE.filter(function(p){return sev[p[0]]<0;}).map(function(p){return p[1].toLowerCase();});
   if(sp.length) L.push("Savoir-être, points forts : "+sp.join(", "));
   if(sm.length) L.push("Savoir-être, à améliorer : "+sm.join(", "));
