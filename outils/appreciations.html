@@ -244,12 +244,13 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
               <button class="primary" type="button" id="syncPush">Enregistrer en ligne</button>
               <button type="button" id="syncPull">Récupérer mes données en ligne</button>
               <button type="button" class="ghost" id="syncOff" hidden>Se déconnecter de cet ordinateur</button>
+              <button type="button" id="syncLink" hidden>Copier mon lien personnel</button>
             </div>
           </div>
           <div class="help">
             <p>Vos classes, vos appréciations et vos réglages d'Albert (clé comprise) sont chiffrés dans ce navigateur avec votre code, puis déposés sur votre relais Cloudflare. Personne ne peut les lire sans le code, pas même le relais.</p>
             <p>Sur un autre ordinateur : ouvrez cette page, tapez le même code et cliquez sur « Récupérer mes données en ligne ». Ensuite, chaque modification est enregistrée automatiquement.</p>
-            <p>À l'ouverture de la page, l'outil demande votre code et ouvre aussitôt vos classes. Sur votre ordinateur personnel, cochez « Ouvrir automatiquement » : seul le code y est gardé, et la page s'ouvre directement. Sur un ordinateur partagé, ne cochez pas : rien n'y reste à la fermeture de l'onglet.</p>
+            <p><strong>Accès direct sur tous vos appareils :</strong> cliquez sur « Copier mon lien personnel » et ajoutez ce lien à vos favoris. Si les favoris de votre navigateur sont synchronisés (compte Google, Apple ou Microsoft), il apparaît aussi sur votre tablette et votre téléphone, et ouvre vos classes sans rien taper. Ce lien contient votre code : ne le partagez avec personne.</p>
             <p>Attention : un code oublié ne peut pas être retrouvé.</p>
           </div>
         </div>
@@ -1513,7 +1514,8 @@ function albCall(prompt){
     });
   }
   window.__syncSched=function(){ if(!S.on) return; clearTimeout(T); T=setTimeout(push,3000); };
-  function ui(){ $("syncOff").hidden=!S.on; $("syncPush").textContent=S.on?"Enregistrer maintenant":"Enregistrer en ligne";
+  function myLink(){ return location.origin+location.pathname+"#k="+encodeURIComponent(S.code); }
+  function ui(){ $("syncOff").hidden=!S.on; $("syncLink").hidden=!S.on; $("syncPush").textContent=S.on?"Enregistrer maintenant":"Enregistrer en ligne";
     if(!S.on) st("Sauvegarde en ligne inactive sur cet ordinateur."); }
   function codeIn(){ var c=$("syncCode").value; if(c.length<10){toast("Le code doit faire au moins 10 caractères");return null;} return c; }
   var online=!IN_ARTIFACT&&!!(window.crypto&&crypto.subtle);
@@ -1528,8 +1530,13 @@ function albCall(prompt){
       pull(c).then(function(p){ if(!p){ st("Aucune sauvegarde avec ce code. Cliquez sur « Enregistrer en ligne » pour en créer une."); return; }
         apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
       .catch(function(e){ st(e.msg||"Récupération impossible"); }); });
+    $("syncLink").addEventListener("click",function(){ if(!S.code) return; var l=myLink();
+      (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(l):Promise.reject()).then(function(){toast("Lien personnel copié : ajoutez-le à vos favoris");},function(){ prompt("Votre lien personnel :",l); }); });
     $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); try{localStorage.removeItem("appr-code");}catch(e){} ui(); });
-    var AUTO="appr-code"; try{ if(!S.code){ var ac=localStorage.getItem(AUTO); if(ac){ S.code=ac; S.on=true; } } }catch(e){}
+    var AUTO="appr-code";
+    /* lien personnel : …/appreciations.html#k=<code> ouvre directement les classes (le # n'est jamais envoyé au serveur) */
+    try{ var km=location.hash.match(/^#k=([^&]+)/); if(km){ var kc=decodeURIComponent(km[1]); if(kc.length>=10){ S.code=kc; S.on=true; keep(); localStorage.setItem(AUTO,kc); } } }catch(e){}
+    try{ if(!S.code){ var ac=localStorage.getItem(AUTO); if(ac){ S.code=ac; S.on=true; } } }catch(e){}
     if(S.on&&S.code){ st("Ouverture de vos classes…");
       pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); }
         SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
@@ -1544,10 +1551,10 @@ function albCall(prompt){
       $("gateCode").addEventListener("input",function(){ create=null; $("gateGo").textContent="Ouvrir mes classes"; gm(""); });
       $("gateForm").addEventListener("submit",function(ev){ ev.preventDefault(); var c=$("gateCode").value;
         if(c.length<10){ gm("Le code fait au moins 10 caractères."); return; }
-        if(create===c){ done(c); DB.t=Date.now(); push(); toast("Sauvegarde en ligne créée"); return; }
+        if(create===c){ done(c); DB.t=Date.now(); push(); toast("Sauvegarde créée : ajoutez cette page à vos favoris pour l'ouvrir directement"); try{ history.replaceState(null,"",myLink()); }catch(e){} return; }
         gm("Ouverture…"); $("gateGo").disabled=true;
         pull(c).then(function(p){
-          if(p){ apply(p); done(c); st("Sauvegarde en ligne active. À jour."); toast("Classes ouvertes"); }
+          if(p){ apply(p); done(c); st("Sauvegarde en ligne active. À jour."); toast("Classes ouvertes"); try{ history.replaceState(null,"",myLink()); }catch(e){} }
           else { create=c; $("gateGo").textContent="Créer ma sauvegarde avec ce code"; gm("Aucune sauvegarde avec ce code. Vérifiez-le, ou créez votre sauvegarde : les classes affichées seront enregistrées en ligne."); }
         }).catch(function(e){ gm(e.msg||"Ouverture impossible"); })
         .then(function(){ $("gateGo").disabled=false; }); });
