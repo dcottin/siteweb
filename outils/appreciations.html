@@ -77,7 +77,7 @@ details.import[open] summary::before{content:"–"}
 .name-row input:hover,.name-row input:focus{border-color:var(--line);background:var(--surface-2)}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}
-.grid3 select,.grid2 select{width:100%}
+.grid3 select,.grid2 select,select[data-f=bilan]{width:100%}
 .mini{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .sld{display:flex;flex-direction:column;gap:2px}
@@ -787,9 +787,9 @@ function autoTone(N,W,C){
   return "C";
 }
 /* 3 tons cohérents avec la situation, centrés sur le ton automatique */
-function toneSet(N,W,C){
-  var ok={E:N>=3&&W>=3&&C>=2, C:W>=2||N>=2, B:!(N>=4&&W>=3&&C>=3), F:W<=2||C<=1||N<=1, A:W===0||C===0||(N<=1&&(W<=1||C<=1))};
-  var order=["E","C","B","F","A"], a=autoTone(N,W,C); ok[a]=true;
+function toneSet(N,W,C,diff){
+  var ok={E:N>=3&&W>=3&&C>=2&&!diff, C:W>=2||N>=2, B:!(N>=4&&W>=3&&C>=3), F:W<=2||C<=1||N<=1, A:W===0||C===0||(N<=1&&(W<=1||C<=1))};
+  var order=["E","C","B","F","A"], a=autoTone(N,W,C); if(diff&&a==="E") a="C"; ok[a]=true;
   var al=order.filter(function(k){return ok[k];}), i=al.indexOf(a), st=Math.max(0,Math.min(i-1,al.length-3)), res=al.slice(st,st+3);
   while(res.length<3) res.push(a);
   return res;
@@ -802,7 +802,7 @@ function incoherent(text,st){
   if(C>=3&&/trop discret|en retrait|participe peu|participation (trop|encore) (rare|discrète|timide)|n'ose pas/i.test(text)&&C===4) n++;
   if(W<=1&&/continuer ainsi|cette lancée|garder ce rythme|ce niveau est à maintenir|bon départ|belle|avec sérieux|travail sérieux|fait preuve de sérieux|régularité dans le travail|persévérer dans cette voie/i.test(text)) n++;
   if(C<=1&&/attitude (est )?(positive|irréprochable)|participe volontiers|comportement (est )?(exemplaire|irréprochable)|attenti(f|ve) en classe/i.test(text)) n++;
-  if(!isNaN(m)&&m>=13&&!st.bilan&&/préoccupant|compromis|urgent|fragile|insuffisant(s)? (résultats|en)|résultats insuffisants|lacunes/i.test(text)) n++;
+  if(!isNaN(m)&&m>=13&&!st.bilan&&!st.diff&&/préoccupant|compromis|urgent|fragile|insuffisant(s)? (résultats|en)|résultats insuffisants|lacunes/i.test(text)) n++;
   return n;
 }
 function phaseOf(p){return p==="T1"||p==="S1"?1:(p==="T2"?2:3);}
@@ -811,7 +811,7 @@ function txt(entry){var i=entry.indexOf("@");return i<0?entry:entry.slice(0,i);}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 /* liaison de deux phrases : « A. B. » → « A, mais b. » (évite l'enchaînement de phrases courtes) */
 function lcFirst(t){ if(/^\{Il\}/.test(t)) return "{il}"+t.slice(4); return /^[A-ZÀ-Ý][a-zà-ÿ' ]/.test(t)?t.charAt(0).toLowerCase()+t.slice(1):t; }
-function joinable(a,b){ return a&&b&&/^(\{Il\} |L[ae] |L'|Les |Sa |Son |Ses |On |aux? |à )/.test(b)&&/\.$/.test(a)&&!/[:;]/.test(a)&&a.length+b.length<175&&!/\bmais\b/i.test(a+" "+b)&&!/, et /.test(a)&&!/^Malgré/.test(a); }
+function joinable(a,b){ return a&&b&&/^(\{Il\} |L[ae] |L'|Les |Sa |Son |Ses |On |aux? |à )/.test(b)&&/\.$/.test(a)&&!/[:;]/.test(a)&&a.length+b.length<175&&!/\bmais\b/i.test(a+" "+b)&&!/, et /.test(a)&&!/malgré|même si/i.test(a); }
 function lastFull(out){ for(var i=out.length-1;i>=0;i--) if(out[i][1]) return out[i]; return null; }
 /* tonalité de la dernière phrase : true positive, false négative, null inconnue */
 function lastPol(out,W,C){ var l=lastFull(out); if(!l) return null; var m=/^(ws|cs)(\d)/.exec(l[0]);
@@ -853,6 +853,12 @@ var SUITE=[
  ["viser","Viser plus haut","viser encore plus haut",1]
 ];
 var SUMAP={}; SUITE.forEach(function(x){SUMAP[x[0]]=x;});
+var SUITE_SHORT={concentr:"se concentrer davantage",maison:"retravailler à la maison",lecons:"apprendre ses leçons",regul:"travailler plus régulièrement",invest:"s'investir davantage",oral:"participer davantage",bases:"consolider les bases",evals:"mieux préparer les évaluations",questions:"poser des questions",confiance:"prendre confiance en [lui|elle]",efforts:"poursuivre ses efforts",maintenir:"maintenir ce niveau",viser:"viser plus haut"};
+function suitesOf(st){ var a=Array.isArray(st.suites)&&st.suites.length?st.suites:(st.suite?[st.suite]:[]); return a.filter(function(k){return SUMAP[k];}).slice(0,3); }
+function joinList(a){ return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" et "+a[a.length-1]; }
+/* élève en difficulté : constat selon le travail */
+var DIFF={ok:["{Il} rencontre toutefois des difficultés, et des lacunes restent à combler.","Des difficultés persistent toutefois, avec des lacunes à combler.","Certaines notions restent cependant difficiles pour [lui|elle].","{Il} rencontre cependant des difficultés sur plusieurs notions.","Des lacunes freinent toutefois encore ses progrès."],
+  ko:["{Il} rencontre des difficultés, et les lacunes s'accumulent.","Des lacunes importantes freinent ses progrès.","Les difficultés sont réelles et les lacunes nombreuses.","{Il} rencontre des difficultés sur de nombreuses notions."]};
 function suiteForms(P,pos){
   if(P===3) return pos?["Il faudra {vp} l'an prochain.","L'an prochain, il faudra {vp}."]:["Il faudra {vp} l'an prochain.","L'an prochain, {il} devra {vp}."];
   return pos?["Il faut {vp}.","Il faudra {vp} au prochain {per}."]:["Il faudra {vp} pour progresser au prochain {per}.","Pour progresser au prochain {per}, {il} devra {vp}.","{Il} devra {vp} pour progresser."];
@@ -952,6 +958,7 @@ function candidate(st,set,A,r){
     if(showC){ var cpart=pick(B.conduct[C].s,"cs"+C);
       if((W>=3)!==(C>=3)&&r()<.75) mergeInto(out,", mais ",cpart); else out.push(cpart); }
   }
+  if(st.diff){ var dk=W>=3?"ok":"ko", dp=pick(DIFF[dk],"df"+dk); if(dk==="ok"&&lastPol(out,W,C)===true&&r()<.5&&/^\{Il\} rencontre (toutefois|cependant)/.test(dp[1])) mergeInto(out,", mais ",[dp[0],dp[1].replace(/ (toutefois|cependant)/,"")]); else out.push(dp); }
   // évite la redite entre la phrase de comportement et les points
   if(showC){pts=pts.filter(function(p){return !((C===1&&(p==="bavard"||p==="attention"))||(C===2&&p==="oral"));});}
   // 3 bis. points d'appui et détail observé
@@ -981,8 +988,8 @@ function candidate(st,set,A,r){
   // 4. absences
   if(st.abs) out.push(pick(B.abs,"ab"));
   // 5. points à travailler
-  var SU=SUMAP[st.suite||""];
-  if(SU&&userPts){ var dupK={concentr:"attention",invest:"implic"}[SU[0]]||SU[0]; pts=pts.filter(function(k){return k!==dupK;}); }
+  var SUL=suitesOf(st).map(function(k){return SUMAP[k];}), SU=SUL[0];
+  if(SU&&userPts){ var dupK=SUL.map(function(x){return {concentr:"attention",invest:"implic"}[x[0]]||x[0];}); pts=pts.filter(function(k){return dupK.indexOf(k)<0;}); }
   if(SU&&!userPts){ pts=[]; }
   else if(!userPts){
     var auto=[];
@@ -992,6 +999,7 @@ function candidate(st,set,A,r){
     if(N===3&&W>=3) auto.push("redac","soin");
     if(N>=4&&W>=3) auto.push("approf");
     if(N<=1) auto.push("bases");
+    if(st.diff) auto=["bases","questions","comprend","entrain"];
     auto=auto.filter(function(k){return forMat(PTMAP[k]||[],set.mat);});
     var PRAT={eps:1,ap:1,mus:1,ateliers:1,pro:1,cdo:1,aac:1,techno:1};
     if(PRAT[set.mat]) auto=auto.map(function(k){return {lecons:"implic",maison:"implic",evals:"implic",entrain:"autonomie",redac:"attention",soin:"attention",methode:"questions",calcul:"autonomie"}[k]||k;});
@@ -1032,11 +1040,12 @@ function candidate(st,set,A,r){
   }
   if(beh2&&!(pts.length>1)) out.push(beh2);
   // 6. conclusion
-  if(SU){ var sf=suiteForms(P,!!SU[3]), si=Math.floor(r()*sf.length); out.push(["su"+SU[0]+":"+si, sf[si].replace("{vp}",SU[2])]); }
+  if(SU){ var allPos=SUL.every(function(x){return !!x[3];}), sf=SUL.length>1&&P!==3?(allPos?["Il faut {vp}.","Il faudra désormais {vp}."]:["Pour progresser, {il} devra {vp}.","Il faudra désormais {vp}.","{Il} devra maintenant {vp}."]):suiteForms(P,allPos), si=Math.floor(r()*sf.length);
+    out.push(["su"+SUL.map(function(x){return x[0];}).join("+")+":"+si, sf[si].replace("{vp}",joinList(SUL.map(function(x){return SUL.length>1?SUITE_SHORT[x[0]]||x[2]:x[2];})))]); }
   else if(r()<.7){
     var cl = closeFor(P,T,set.niv);
     /* après une critique, pas de « continuer ainsi » : on garde une conclusion tournée vers le progrès */
-    var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2;
+    var crit = (showC&&C<=2) || pts.length>0 || !!behS || W<=2 || !!st.diff;
     if(crit){ var CONT=/continuer ainsi|poursuivre sur cette lancée|garder ce rythme|continuer sur cette voie|cette dynamique|même sérieux|très bon départ|il faut continuer|garder cette motivation|encourag/i;
       var cl2=cl.filter(function(t){return !CONT.test(t);});
       if(cl2.length) out.push(pick(cl2,"cl"+P+T)); }
@@ -1054,7 +1063,7 @@ function generate(st,set,usage,seed){
     if(text.length>max) score+=1000+(text.length-max);
     if(set.useName&&(st.prenom||"").trim()&&text.indexOf(st.prenom.trim())<0) score+=150;
     parts.forEach(function(p){score+=28*(usage[p[0].split(":")[0]+":"+p[0].split(":")[1]]||0);});
-    var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{6,}/g)||[]).forEach(function(w){var k=w.slice(0,6);if(seen[k])score+=(w.length>=8?18:10);seen[k]=1;});
+    var seen={}; (text.toLowerCase().match(/[a-zàâçéèêëîïôûù]{5,}/g)||[]).forEach(function(w){if(/^(toute|faire|cette|leurs|elles|avoir|encore|aussi|toujours|depuis|lors|pendant|notions?|classe|travail|résultats?|mais)$/.test(w))return;var k=w.slice(0,6);if(seen[k])score+=(w.length>=8?18:10);seen[k]=1;});
     var nS=(text.match(/[.!?](\s|$)/g)||[]).length; if(nS>4) score+=25*(nS-4); if(nS<2&&target>=180) score+=40;
     var sents=text.split(/(?<=[.!?])\s+/), shortN=sents.filter(function(x){return x.length<55;}).length; if(shortN>2) score+=8*(shortN-2); var nM=(text.match(/\bmais\b/g)||[]).length; if(nM>1) score+=35*(nM-1);
     score+=r()*20;
@@ -1067,7 +1076,7 @@ function generate(st,set,usage,seed){
 }
 /* 3 propositions, une par ton */
 function makeProps(st,set,usage,seed){
-  var A=analyse(Object.assign({},st,{ton:"auto"}),set), tones=toneSet(A.N,A.W,A.C), u=Object.assign({},usage), out=[];
+  var A=analyse(Object.assign({},st,{ton:"auto"}),set), tones=toneSet(A.N,A.W,A.C,!!st.diff), u=Object.assign({},usage), out=[];
   tones.forEach(function(t,k){
     var g=null;
     for(var tr=0;tr<4;tr++){ g=generate(Object.assign({},st,{ton:t}),set,u,(seed|0)+k*7919+tr*104729); if(!out.some(function(o){return o.text===g.text;})) break; }
@@ -1108,7 +1117,7 @@ function newStudent(o){
   o=o||{};
   var full=o.name||"Nouvel élève", sp=splitName(full);
   var g=o.g||guessG(sp.prenom);
-  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],se:o.se||{},bilan:o.bilan||"",suite:o.suite||"",detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
+  return {id:uid(),name:full,prenom:sp.prenom,g:g,gGuess:!o.g,moy:o.moy==null?"":o.moy,evo:o.evo||0,w:o.w==null?3:o.w,c:o.c==null?3:o.c,ton:o.ton||"auto",abs:!!o.abs,pts:o.pts||[],appui:o.appui||[],se:o.se||{},bilan:o.bilan||"",suite:"",suites:o.suites||(o.suite?[o.suite]:[]),diff:!!o.diff,detail:o.detail||"",txt:"",ids:[],edited:false,seed:(Math.random()*1e9)|0};
 }
 function sample(){
   var s=[
@@ -1200,6 +1209,7 @@ function cardHTML(st){
   var apchips=APPUIS.filter(function(p){return (!SE_FROM_AP[p[0]]&&!AP_IN_SLIDER[p[0]]&&forMat(p,set.mat))||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var apch=appui.map(function(k){return APMAP[k][1];}).join(", ");
   var chosen=st.pts.map(function(k){return PTMAP[k][1];}).join(", ");
+  var sul=suitesOf(st);
   var prec=[].concat(SE.filter(function(p){return (st.se||{})[p[0]];}).map(function(p){return ((st.se||{})[p[0]]>0?"+ ":"− ")+p[1];}),appui.map(function(k){return "+ "+APMAP[k][1];}),st.pts.map(function(k){return "− "+PTMAP[k][1];}),st.abs?["absences"]:[],(st.detail||"").trim()?["détail"]:[]).join(", ");
   var se=st.se||{}, seSum=SE.filter(function(p){return se[p[0]];}).map(function(p){return (se[p[0]]>0?"+ ":"− ")+p[1];}).join(", ");
   var sechips=SE.map(function(p){var v=se[p[0]]||0;return '<button type="button" class="chip'+(v>0?" se-p":v<0?" se-m":"")+'" data-se="'+p[0]+'" aria-label="'+esc(p[1])+(v>0?" : point fort":v<0?" : à améliorer":"")+'">'+(v>0?"<b>+</b>":v<0?"<b>−</b>":"")+esc(p[1])+"</button>";}).join("");
@@ -1214,10 +1224,11 @@ function cardHTML(st){
     slider("w","Travail",WL,+st.w,0,st.id)+
     slider("c","Attitude en classe",CL,+st.c,0,st.id)+
     (ph===1?"":slider("evo","Progression",EVOL,+st.evo||0,-2,st.id))+
-    '<div class="grid2">'+
+    '<label class="check"><input type="checkbox" data-f="diff"'+(st.diff?" checked":"")+'> Rencontre des difficultés, a des lacunes</label>'+
+    '<div>'+
       '<label class="field"><span>Bilan (1re phrase)</span><select data-f="bilan" id="b-'+st.id+'"><option value="">Auto, selon la moyenne</option>'+BILAN_K.map(function(k){return '<option value="'+k+'"'+(st.bilan===k?" selected":"")+">"+BILAN[k].l+"</option>";}).join("")+'</select></label>'+
-      '<label class="field"><span>Pour la suite (dernière phrase)</span><select data-f="suite" id="s-'+st.id+'"><option value="">Auto</option>'+SUITE.map(function(x){return '<option value="'+x[0]+'"'+(st.suite===x[0]?" selected":"")+">"+x[1]+"</option>";}).join("")+'</select></label>'+
     '</div>'+
+    '<details class="pts"'+(st._openU?" open":"")+' data-d="u"><summary>Pour la suite, dernière phrase (plusieurs choix possibles) : '+(sul.length?esc(sul.map(function(k){return SUMAP[k][1];}).join(", ")):"automatique")+'</summary><div class="chips">'+SUITE.map(function(x){var on=sul.indexOf(x[0])>=0;return '<button type="button" class="chip" data-su="'+x[0]+'" aria-pressed="'+on+'">'+x[1]+'</button>';}).join("")+'</div></details>'+
     '<details class="pts"'+(st._openX?" open":"")+' data-d="x"><summary>Précisions (facultatif)'+(prec?" : "+esc(prec):"")+'</summary>'+
       '<div class="psub"><b>Savoir-être</b> <span class="se-help">1 clic : point fort (+), 2 clics : à améliorer (−), 3 clics : retirer</span></div><div class="chips">'+sechips+'</div>'+
       '<div class="psub"><b>Points forts</b></div><div class="chips">'+apchips+'</div>'+
@@ -1252,7 +1263,7 @@ function renderList(){
 function refreshCard(st,keepFocus){
   var el=document.querySelector('.card[data-id="'+st.id+'"]'); if(!el) return;
   var a=document.activeElement, fid=a&&a.id, ss=a&&a.selectionStart, se=a&&a.selectionEnd;
-  st._openX=!!(el.querySelector('details[data-d="x"]')||{}).open;st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open; st._openS=!!(el.querySelector('details[data-d="s"]')||{}).open;
+  st._openX=!!(el.querySelector('details[data-d="x"]')||{}).open;st._openU=!!(el.querySelector('details[data-d="u"]')||{}).open;st._open=!!(el.querySelector('details[data-d="p"]')||{}).open; st._openA=!!(el.querySelector('details[data-d="a"]')||{}).open; st._openS=!!(el.querySelector('details[data-d="s"]')||{}).open;
   paintCard(el,st);
   if(keepFocus&&fid){var f=$(fid); if(f){f.focus(); try{if(ss!=null&&f.setSelectionRange) f.setSelectionRange(ss,se);}catch(e){}}}
 }
@@ -1282,6 +1293,7 @@ list.addEventListener("click",function(e){
   if(b.dataset.se){st.se=st.se||{};var sv=st.se[b.dataset.se]||0;sv=sv===0?1:sv===1?-1:0;if(sv)st.se[b.dataset.se]=sv;else delete st.se[b.dataset.se];if(!st.edited)regen(st,false);refreshCard(st);save();return;}
   if(b.dataset.ap){st.appui=st.appui||[];var j=st.appui.indexOf(b.dataset.ap);if(j>=0)st.appui.splice(j,1);else st.appui.push(b.dataset.ap);if(!st.edited)regen(st,false);refreshCard(st);save();return;}
   if(b.dataset.pt){var i=st.pts.indexOf(b.dataset.pt);if(i>=0)st.pts.splice(i,1);else st.pts.push(b.dataset.pt);if(!st.edited)regen(st,false);refreshCard(st);save();status();return;}
+  if(b.dataset.su){var su=suitesOf(st),j2=su.indexOf(b.dataset.su);if(j2>=0)su.splice(j2,1);else{if(su.length>=3){toast("3 choix au maximum");return;}su.push(b.dataset.su);}st.suites=su;st.suite="";if(!st.edited)regen(st,false);refreshCard(st);save();return;}
   if(b.dataset.prop!=null){var o=st.props[+b.dataset.prop];if(o){st.pick=+b.dataset.prop;st.ton=o.tone;st.txt=o.text;st.ids=o.ids;st.edited=false;st.ai=false;refreshCard(st);save();status();}return;}
   var act=b.dataset.act;
   if(act==="copy"){var ta=b.closest(".card").querySelector(".appr");copyText(ta.value,ta);}
@@ -1309,6 +1321,7 @@ list.addEventListener("change",function(e){
   if(f==="w"||f==="c"||f==="evo"){st[f]=+t.value;st.ton="auto";}
   else if(f==="bilan"||f==="suite"){st[f]=t.value;}
   else if(f==="abs"){st.abs=t.checked;}
+  else if(f==="diff"){st.diff=t.checked;st.ton="auto";}
   else if(f==="detail"){}
   else if(f==="name"){if(cls().useName&&!st.edited){regen(st,false);refreshCard(st);}save();return;}
   else return;
@@ -1377,7 +1390,8 @@ function profile(st,i){
   if((st.appui||[]).length) o.points_d_appui=st.appui.map(function(k){return APMAP[k][1];});
   if(st.pts.length) o.a_travailler=st.pts.map(function(k){return PTMAP[k][1];});
   if(BILAN[st.bilan||""]) o.bilan_premiere_phrase=BILAN[st.bilan].l;
-  if(SUMAP[st.suite||""]) o.objectif_derniere_phrase=SUMAP[st.suite][1];
+  if(suitesOf(st).length) o.objectifs_derniere_phrase=suitesOf(st).map(function(k){return SUMAP[k][1];});
+  if(st.diff) o.difficultes="rencontre des difficultés, a des lacunes (malgré le travail fourni si le travail est sérieux)";
   var sev=st.se||{}, sp=SE.filter(function(p){return sev[p[0]]>0;}).map(function(p){return p[1];}), sm=SE.filter(function(p){return sev[p[0]]<0;}).map(function(p){return p[1];});
   if(sp.length) o.savoir_etre_points_forts=sp; if(sm.length) o.savoir_etre_a_ameliorer=sm;
   if((st.detail||"").trim()) o.detail_observe=mask(st.detail,st);
@@ -1506,7 +1520,8 @@ function albParams(st,named){
   L.push("Attitude en classe : "+CL[st.c]);
   if(ph>1) L.push("Progression depuis la période précédente : "+PROGL[String(st.evo)]);
   if(BILAN[st.bilan||""]) L.push("Bilan choisi par le professeur (à dire dès la première phrase) : "+BILAN[st.bilan].l.toLowerCase());
-  if(SUMAP[st.suite||""]) L.push("Objectif pour la suite (dernière phrase) : "+SUMAP[st.suite][2].replace(/\[([^|\]]*)\|([^\]]*)\]/,st.g==="f"?"$2":"$1"));
+  if(suitesOf(st).length) L.push("Objectifs pour la suite (dans la dernière phrase) : "+suitesOf(st).map(function(k){return SUMAP[k][2].replace(/\[([^|\]]*)\|([^\]]*)\]/,st.g==="f"?"$2":"$1");}).join(" ; "));
+  if(st.diff) L.push("L'élève rencontre des difficultés et a des lacunes"+(+st.w>=3?", malgré un travail sérieux":"")+".");
   var sev=st.se||{}, sp=SE.filter(function(p){return sev[p[0]]>0;}).map(function(p){return p[1].toLowerCase();}), sm=SE.filter(function(p){return sev[p[0]]<0;}).map(function(p){return p[1].toLowerCase();});
   if(sp.length) L.push("Savoir-être, points forts : "+sp.join(", "));
   if(sm.length) L.push("Savoir-être, à améliorer : "+sm.join(", "));
