@@ -104,6 +104,11 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
 .confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.on{opacity:1}
+.gate{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.gate[hidden]{display:none!important}
+.gate-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:22px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.gate-card h2{margin:0;font-size:20px}.gate-card p{margin:0;color:var(--muted);font-size:14px}
+.gate-card input[type=password]{font-size:16px;padding:10px 12px}
 @media (max-width:860px){
   .card{grid-template-columns:minmax(0,1fr)}
   .card .left{border-right:0;border-bottom:1px solid var(--line)}
@@ -215,6 +220,18 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
     </details>
   </section>
 
+  <div class="gate" id="gate" hidden>
+    <form class="gate-card" id="gateForm" autocomplete="on">
+      <h2>Ouvrir mes classes</h2>
+      <p>Tapez votre code de sauvegarde : vos classes, vos appréciations et votre clé Albert s'ouvrent aussitôt.</p>
+      <input type="text" name="username" value="appreciations-bulletin" autocomplete="username" hidden>
+      <input type="password" id="gateCode" name="password" autocomplete="current-password" placeholder="Code de sauvegarde" aria-label="Code de sauvegarde">
+      <label class="check" style="padding:0"><input type="checkbox" id="gateKeep"> Ouvrir automatiquement sur cet ordinateur (ordinateur personnel uniquement)</label>
+      <div class="actions"><button class="primary" type="submit" id="gateGo">Ouvrir mes classes</button><button type="button" class="ghost" id="gateSkip">Continuer sans sauvegarde</button></div>
+      <p class="status" id="gateMsg"></p>
+    </form>
+  </div>
+
   <section class="panel">
     <details class="import" id="syncBox">
       <summary>Sauvegarder mes classes et ma clé (autres ordinateurs)</summary>
@@ -226,13 +243,13 @@ body.has-ai .ai-only,body.has-albert .albert-only{display:inline-flex}
             <div class="actions">
               <button class="primary" type="button" id="syncPush">Enregistrer en ligne</button>
               <button type="button" id="syncPull">Récupérer mes données en ligne</button>
-              <button type="button" class="ghost" id="syncOff" hidden>Arrêter sur cet ordinateur</button>
+              <button type="button" class="ghost" id="syncOff" hidden>Se déconnecter de cet ordinateur</button>
             </div>
           </div>
           <div class="help">
             <p>Vos classes, vos appréciations et vos réglages d'Albert (clé comprise) sont chiffrés dans ce navigateur avec votre code, puis déposés sur votre relais Cloudflare. Personne ne peut les lire sans le code, pas même le relais.</p>
             <p>Sur un autre ordinateur : ouvrez cette page, tapez le même code et cliquez sur « Récupérer mes données en ligne ». Ensuite, chaque modification est enregistrée automatiquement.</p>
-            <p>Rien n'est conservé dans ce navigateur : à chaque nouvelle ouverture de la page, tapez votre code et cliquez sur « Récupérer mes données en ligne ». C'est adapté aux ordinateurs partagés du lycée.</p>
+            <p>À l'ouverture de la page, l'outil demande votre code et ouvre aussitôt vos classes. Sur votre ordinateur personnel, cochez « Ouvrir automatiquement » : seul le code y est gardé, et la page s'ouvre directement. Sur un ordinateur partagé, ne cochez pas : rien n'y reste à la fermeture de l'onglet.</p>
             <p>Attention : un code oublié ne peut pas être retrouvé.</p>
           </div>
         </div>
@@ -1511,12 +1528,31 @@ function albCall(prompt){
       pull(c).then(function(p){ if(!p){ st("Aucune sauvegarde avec ce code. Cliquez sur « Enregistrer en ligne » pour en créer une."); return; }
         apply(p); S.code=c; S.on=true; keep(); ui(); st("Données récupérées. Sauvegarde en ligne active."); toast("Classes et clé Albert récupérées"); })
       .catch(function(e){ st(e.msg||"Récupération impossible"); }); });
-    $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); ui(); });
-    if(S.on&&S.code){ st("Vérification de la sauvegarde en ligne…");
-      pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Dernière version récupérée en ligne"); }
+    $("syncOff").addEventListener("click",function(){ S.on=false; S.code=""; $("syncCode").value=""; keep(); try{localStorage.removeItem("appr-code");}catch(e){} ui(); });
+    var AUTO="appr-code"; try{ if(!S.code){ var ac=localStorage.getItem(AUTO); if(ac){ S.code=ac; S.on=true; } } }catch(e){}
+    if(S.on&&S.code){ st("Ouverture de vos classes…");
+      pull(S.code).then(function(p){ if(p&&(p.t||0)>(DB.t||0)){ apply(p); toast("Classes ouvertes"); }
         SYNC_READY=true; if(!p||(p.t||0)<(DB.t||0)) push(); else st("Sauvegarde en ligne active. À jour."); })
       .catch(function(e){ SYNC_READY=true; st(e.msg); });
-    } else SYNC_READY=true;
+    } else {
+      /* pas de code connu : on le demande à l'ouverture, puis tout se fait seul */
+      var gate=$("gate"), create=null; gate.hidden=false; setTimeout(function(){ try{$("gateCode").focus();}catch(e){} },50);
+      function gm(t){$("gateMsg").textContent=t;}
+      function done(c){ S.code=c; S.on=true; keep(); $("syncCode").value=c; ui(); SYNC_READY=true;
+        try{ if($("gateKeep").checked) localStorage.setItem(AUTO,c); }catch(e){} gate.hidden=true; afterGate(); }
+      function afterGate(){ var f=window.__afterGate; window.__afterGate=null; if(f) setTimeout(f,100); }
+      $("gateCode").addEventListener("input",function(){ create=null; $("gateGo").textContent="Ouvrir mes classes"; gm(""); });
+      $("gateForm").addEventListener("submit",function(ev){ ev.preventDefault(); var c=$("gateCode").value;
+        if(c.length<10){ gm("Le code fait au moins 10 caractères."); return; }
+        if(create===c){ done(c); DB.t=Date.now(); push(); toast("Sauvegarde en ligne créée"); return; }
+        gm("Ouverture…"); $("gateGo").disabled=true;
+        pull(c).then(function(p){
+          if(p){ apply(p); done(c); st("Sauvegarde en ligne active. À jour."); toast("Classes ouvertes"); }
+          else { create=c; $("gateGo").textContent="Créer ma sauvegarde avec ce code"; gm("Aucune sauvegarde avec ce code. Vérifiez-le, ou créez votre sauvegarde : les classes affichées seront enregistrées en ligne."); }
+        }).catch(function(e){ gm(e.msg||"Ouverture impossible"); })
+        .then(function(){ $("gateGo").disabled=false; }); });
+      $("gateSkip").addEventListener("click",function(){ gate.hidden=true; SYNC_READY=true; afterGate(); st("Sauvegarde en ligne inactive : vos modifications seront perdues à la fermeture de l'onglet."); });
+    }
   }
   /* version Claude : stockage privé dans le compte (capacité db, dossier personnel data/users/<id>) */
   function cloudClaude(){
@@ -1656,7 +1692,7 @@ function importReceived(t,src){
   var rep=$("importReplace"), keep=rep.checked; rep.checked=true; $("importGo").click(); rep.checked=keep;
   window.scrollTo({top:0,behavior:"smooth"});
 }
-try{ var hm=location.hash.match(/^#apx=(.*)$/); if(hm){ var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); setTimeout(function(){importReceived(got,"Liste reçue de PRONOTE");},300); } }catch(e){}
+try{ var hm=location.hash.match(/^#apx=(.*)$/); if(hm){ var got=decodeURIComponent(hm[1]); history.replaceState(null,"",location.pathname+location.search); setTimeout(function go(){ var g=$("gate"); if(g&&!g.hidden){ window.__afterGate=go; return; } importReceived(got,"Liste reçue de PRONOTE");},300); } }catch(e){}
 $("importPaste").addEventListener("click",function(){
   if(!navigator.clipboard||!navigator.clipboard.readText){toast("Collez la liste dans la zone avec Ctrl+V");$("importTxt").focus();return;}
   navigator.clipboard.readText().then(function(t){importReceived(t,"Liste collée");},function(){toast("Collez la liste dans la zone avec Ctrl+V");$("importBox").open=true;$("importTxt").focus();});
