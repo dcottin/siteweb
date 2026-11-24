@@ -789,6 +789,7 @@ function candidate(st,set,A,r){
     var wp=W>=3, key=N===2?(wp?"mp":"mn"):(N>=3?(wp?"pp":"pn"):(wp?"np":"nn"));
     var mm=parseFloat(String(st.moy).replace(",",".")), juste=N===2&&mm<11;
     var on=juste?JUSTE_NP[P]:B.openNP[P][N], oi=Math.floor(r()*on.length), parts=on[oi].split("|");
+    if(juste) key=wp?"np":"nn";
     var lk=LINK[key], li=Math.floor(r()*lk.length), wl=B.work[W].np, wi=Math.floor(r()*wl.length);
     var ag={m:"",f:"e",p:"s"}[parts[1]];
     out.push(["onp"+P+N+":"+oi, parts[0]+lk[li].replace("{a}",ag).replace("{w}",wl[wi])]);
