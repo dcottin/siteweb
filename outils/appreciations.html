@@ -1170,7 +1170,7 @@ function toneOf(st){var o=st.props&&st.props[st.pick];return o?o.tone:analyse(st
 
 function cardHTML(st){
   var set=settings(), tone=toneOf(st), ph=analyse(st,set).phase, max=+set.max||0, n=st.txt.length;
-  var props=(st.props||[]).map(function(o,i){var on=i===st.pick&&!st.edited&&!st.ai;return '<button type="button" class="prop" data-prop="'+i+'" aria-pressed="'+on+'" style="--tc:var(--t-'+o.tone+')"><span class="tone-tag">'+TONES[o.tone]+(on?" · choisie":"")+'</span><span class="ptxt">'+esc(o.text)+'</span></button>';}).join("");
+  var props=(st.props||[]).map(function(o,i){var on=i===st.pick&&!st.edited&&!st.ai;return '<button type="button" class="prop" data-prop="'+i+'" aria-pressed="'+on+'" style="--tc:var(--t-'+o.tone+')"><span class="tone-tag">'+TONES[o.tone]+(st.props.slice(0,i).some(function(x){return x.tone===o.tone;})?", autre tournure":"")+(on?" · choisie":"")+'</span><span class="ptxt">'+esc(o.text)+'</span></button>';}).join("");
   var chips=POINTS.filter(function(p){return (!SE_FROM_PTS[p[0]]&&forMat(p,set.mat))||st.pts.indexOf(p[0])>=0;}).map(function(p){var on=st.pts.indexOf(p[0])>=0;return '<button type="button" class="chip" data-pt="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
   var appui=st.appui||[];
   var apchips=APPUIS.filter(function(p){return (!SE_FROM_AP[p[0]]&&forMat(p,set.mat))||appui.indexOf(p[0])>=0;}).map(function(p){var on=appui.indexOf(p[0])>=0;return '<button type="button" class="chip" data-ap="'+p[0]+'" aria-pressed="'+on+'">'+p[1]+"</button>";}).join("");
